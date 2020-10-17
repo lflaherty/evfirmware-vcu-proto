@@ -142,6 +142,8 @@ int main(void)
 
 	count++;
 	printf("Count %d\n", count);
+
+//	uint32_t rxCount = HAL_CAN_GetRxFifoFillLevel(&hcan1, RxFifo)
   }
   /* USER CODE END 3 */
 }
@@ -216,12 +218,12 @@ static void MX_CAN1_Init(void)
   hcan1.Init.SyncJumpWidth = CAN_SJW_1TQ;
   hcan1.Init.TimeSeg1 = CAN_BS1_8TQ;
   hcan1.Init.TimeSeg2 = CAN_BS2_1TQ;
-  hcan1.Init.TimeTriggeredMode = ENABLE;
-  hcan1.Init.AutoBusOff = ENABLE;
-  hcan1.Init.AutoWakeUp = ENABLE;
+  hcan1.Init.TimeTriggeredMode = DISABLE;
+  hcan1.Init.AutoBusOff = DISABLE;
+  hcan1.Init.AutoWakeUp = DISABLE;
   hcan1.Init.AutoRetransmission = ENABLE;
-  hcan1.Init.ReceiveFifoLocked = ENABLE;
-  hcan1.Init.TransmitFifoPriority = ENABLE;
+  hcan1.Init.ReceiveFifoLocked = DISABLE;
+  hcan1.Init.TransmitFifoPriority = DISABLE;
   if (HAL_CAN_Init(&hcan1) != HAL_OK)
   {
     Error_Handler();
@@ -289,10 +291,10 @@ static void CAN_Config(void)
   sFilterConfig.FilterBank = 0;
   sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
   sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
-  sFilterConfig.FilterIdHigh = 0xFFFF;
-  sFilterConfig.FilterIdLow = 0xFFFF;
-  sFilterConfig.FilterMaskIdHigh = 0xFFFF;
-  sFilterConfig.FilterMaskIdLow = 0xFFFF;
+  sFilterConfig.FilterIdHigh = 0x0000;
+  sFilterConfig.FilterIdLow = 0x0000;
+  sFilterConfig.FilterMaskIdHigh = 0x0000;
+  sFilterConfig.FilterMaskIdLow = 0x0000;
   sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
   sFilterConfig.FilterActivation = ENABLE;
   sFilterConfig.SlaveStartFilterBank = 14;
@@ -335,7 +337,21 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
     Error_Handler();
   }
 
-  printf("Receive data %d\n", RxData[0]);
+  /* Decode */
+  printf("Receive data: ");
+  if ((RxHeader.StdId == 0x5A1) && (RxHeader.IDE == CAN_ID_STD) && (RxHeader.DLC == 8))
+  {
+    // Do stuff with RxData[x]
+	for (uint8_t i = 0; i < 8; ++i)
+	{
+		printf("%x ", RxData[i]);
+	}
+  }
+  else
+  {
+	printf("[Not valid]");
+  }
+  printf("\n");
 }
 
 /* USER CODE END 4 */
