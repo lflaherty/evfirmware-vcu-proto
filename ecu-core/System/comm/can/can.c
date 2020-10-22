@@ -32,17 +32,21 @@ struct CAN_BusData {
 };
 static struct CAN_BusData canCallbacks[CAN_MAX_BUSSES];
 
+#define CAN_BUS1_INDEX 0
+#define CAN_BUS2_INDEX 1
+#define CAN_BUS3_INDEX 2
+
 
 // ------------------- Private methods -------------------
 struct CAN_BusData* CAN_GetBusData(const CAN_TypeDef* bus)
 {
   struct CAN_BusData* storage;
   if (bus == CAN1) {
-    storage = &canCallbacks[0];
+    storage = &canCallbacks[CAN_BUS1_INDEX];
   } else if (bus == CAN2) {
-    storage = &canCallbacks[1];
+    storage = &canCallbacks[CAN_BUS2_INDEX];
   } else if (bus == CAN3) {
-    storage = &canCallbacks[2];
+    storage = &canCallbacks[CAN_BUS3_INDEX];
   } else {
     // TODO: throw error: invalid CAN bus
   }
