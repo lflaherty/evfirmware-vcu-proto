@@ -24,6 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include "comm/can/can.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -60,7 +61,6 @@ static void MX_CAN1_Init(void);
 void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
-static void CAN_Config(void);
 
 /* USER CODE END PFP */
 
@@ -111,10 +111,12 @@ int main(void)
   MX_CAN1_Init();
   /* USER CODE BEGIN 2 */
 
-  CAN_Config();
-
   printf("\n");
   printf("Initialize\n");
+
+  CAN_Init();
+  CAN_Config(&hcan1);
+  // TODO setup callback
 
   /* USER CODE END 2 */
 
@@ -154,10 +156,10 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	HAL_Delay(1000);
-	HAL_GPIO_TogglePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin);
+    HAL_Delay(1000);
+    HAL_GPIO_TogglePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin);
 
-	// setup CAN data
+    // setup CAN data
     TxData[0] = (count >> 8) & 0xFF;
     TxData[1] = count & 0xFF;
     TxData[2] = 0x68;
@@ -166,17 +168,11 @@ int main(void)
     TxData[5] = 0xAF;
 
     /* Start the Transmission process */
-    err = HAL_CAN_AddTxMessage(&hcan1, &TxHeader, TxData, &TxMailbox);
-    if (err != HAL_OK)
-    {
-      /* Transmission request Error */
-      Error_Handler();
-    }
+    CAN_SendMessage(CAN1, 0x5A1, TxData, 8);
 
-	count++;
-	printf("Count %d\n", count);
+    count++;
+    printf("Count %d\n", count);
 
-//	uint32_t rxCount = HAL_CAN_GetRxFifoFillLevel(&hcan1, RxFifo)
   }
   /* USER CODE END 3 */
 }
@@ -295,97 +291,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-static void CAN_Config(void)
-{
-  CAN_FilterTypeDef  sFilterConfig;
-
-  /*##-1- Configure the CAN peripheral #######################################*/
-//  hcan1.Instance = CANx;
-
-//  hcan1.Init.TimeTriggeredMode = DISABLE;
-//  hcan1.Init.AutoBusOff = DISABLE;
-//  hcan1.Init.AutoWakeUp = DISABLE;
-//  hcan1.Init.AutoRetransmission = ENABLE;
-//  hcan1.Init.ReceiveFifoLocked = DISABLE;
-//  hcan1.Init.TransmitFifoPriority = DISABLE;
-//  hcan1.Init.Mode = CAN_MODE_NORMAL;
-//  hcan1.Init.SyncJumpWidth = CAN_SJW_1TQ;
-//  hcan1.Init.TimeSeg1 = CAN_BS1_6TQ;
-//  hcan1.Init.TimeSeg2 = CAN_BS2_2TQ;
-//  hcan1.Init.Prescaler = 6;
-//
-//  if (HAL_CAN_Init(&hcan1) != HAL_OK)
-//  {
-//    /* Initialization Error */
-//    Error_Handler();
-//  }
-
-  /*##-2- Configure the CAN Filter ###########################################*/
-  sFilterConfig.FilterBank = 0;
-  sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
-  sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
-  sFilterConfig.FilterIdHigh = 0x0000;
-  sFilterConfig.FilterIdLow = 0x0000;
-  sFilterConfig.FilterMaskIdHigh = 0x0000;
-  sFilterConfig.FilterMaskIdLow = 0x0000;
-  sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
-  sFilterConfig.FilterActivation = ENABLE;
-  sFilterConfig.SlaveStartFilterBank = 14;
-
-  if (HAL_CAN_ConfigFilter(&hcan1, &sFilterConfig) != HAL_OK)
-  {
-    /* Filter configuration Error */
-    Error_Handler();
-  }
-
-  /*##-3- Start the CAN peripheral ###########################################*/
-  if (HAL_CAN_Start(&hcan1) != HAL_OK)
-  {
-    /* Start Error */
-    Error_Handler();
-  }
-
-  /*##-4- Activate CAN RX notification #######################################*/
-  if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
-  {
-    /* Notification Error */
-    Error_Handler();
-  }
-
-  /*##-5- Configure Transmission process #####################################*/
-  TxHeader.StdId = 0x321;
-  TxHeader.ExtId = 0x01;
-  TxHeader.RTR = CAN_RTR_DATA;
-  TxHeader.IDE = CAN_ID_STD;
-  TxHeader.DLC = 8;
-  TxHeader.TransmitGlobalTime = DISABLE;
-}
-
-void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
-{
-  /* Get RX message */
-  if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK)
-  {
-    /* Reception Error */
-    Error_Handler();
-  }
-
-  /* Decode */
-  printf("Receive data: ");
-  if ((RxHeader.StdId == 0x5A1) && (RxHeader.IDE == CAN_ID_STD) && (RxHeader.DLC == 8))
-  {
-    // Do stuff with RxData[x]
-	for (uint8_t i = 0; i < 8; ++i)
-	{
-		printf("%x ", RxData[i]);
-	}
-  }
-  else
-  {
-	printf("[Not valid]");
-  }
-  printf("\n");
-}
 
 /* USER CODE END 4 */
 
