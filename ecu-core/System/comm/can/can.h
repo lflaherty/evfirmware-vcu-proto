@@ -20,14 +20,6 @@
 typedef void (*CAN_Callback)(void);
 
 /**
- * @brief Callback definition
- */
-typedef struct {
-	CAN_Callback call;
-	uint32_t mask;
-} CAN_Callback_T;
-
-/**
  * @brief Initialize CAN driver interface
  */
 void CAN_Init(void);

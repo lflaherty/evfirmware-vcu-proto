@@ -12,12 +12,22 @@
 
 // ------------------- Private data -------------------
 
-// Callback storage
+/**
+ * @brief Callback definition
+ */
+struct CAN_Callback_Info {
+  CAN_Callback call;
+  uint32_t mask;
+};
+
+/**
+ * @brief Callback storage
+ */
 struct CAN_BusData {
   CAN_HandleTypeDef* handle;
   uint32_t txMailbox;
 
-  CAN_Callback_T callbacks[CAN_MAX_CALLBACKS];
+  struct CAN_Callback_Info callbacks[CAN_MAX_CALLBACKS];
   uint16_t numCallbacks;
 };
 static struct CAN_BusData canCallbacks[CAN_MAX_BUSSES];
@@ -126,7 +136,7 @@ void CAN_RegisterCallback(const CAN_TypeDef* bus, const CAN_Callback method, uin
   }
 
   // Create callback entry, add to list
-  CAN_Callback_T callback;
+  struct CAN_Callback_Info callback;
   callback.call = method;
   callback.mask = mask;
 
