@@ -13,24 +13,14 @@
 // ------------------- Private data -------------------
 
 /**
- * @brief Callback definition
- */
-struct CAN_Callback_Info {
-  CAN_Callback call;
-  uint32_t mask;
-};
-
-/**
- * @brief Callback storage
+ * @brief CAN Bus storage
  */
 struct CAN_BusData {
   CAN_HandleTypeDef* handle;
   uint32_t txMailbox;
-
-  struct CAN_Callback_Info callbacks[CAN_MAX_CALLBACKS];
-  uint16_t numCallbacks;
+  CAN_Callback callback;
 };
-static struct CAN_BusData canCallbacks[CAN_MAX_BUSSES];
+static struct CAN_BusData canBusData[CAN_MAX_BUSSES];
 
 #define CAN_BUS1_INDEX 0
 #define CAN_BUS2_INDEX 1
@@ -38,15 +28,15 @@ static struct CAN_BusData canCallbacks[CAN_MAX_BUSSES];
 
 
 // ------------------- Private methods -------------------
-struct CAN_BusData* CAN_GetBusData(const CAN_TypeDef* bus)
+static struct CAN_BusData* CAN_GetBusData(const CAN_TypeDef* bus)
 {
   struct CAN_BusData* storage;
   if (bus == CAN1) {
-    storage = &canCallbacks[CAN_BUS1_INDEX];
+    storage = &canBusData[CAN_BUS1_INDEX];
   } else if (bus == CAN2) {
-    storage = &canCallbacks[CAN_BUS2_INDEX];
+    storage = &canBusData[CAN_BUS2_INDEX];
   } else if (bus == CAN3) {
-    storage = &canCallbacks[CAN_BUS3_INDEX];
+    storage = &canBusData[CAN_BUS3_INDEX];
   } else {
     // TODO: throw error: invalid CAN bus
   }
@@ -85,7 +75,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 void CAN_Init(void)
 {
   // Initialize mem to 0
-  memset(canCallbacks, 0, sizeof(canCallbacks));
+  memset(canBusData, 0, sizeof(canBusData));
 
   // create thread for processing the callbacks outside of an interrupt
   // TODO
@@ -128,24 +118,13 @@ void CAN_Config(CAN_HandleTypeDef* handle)
   }
 }
 
-void CAN_RegisterCallback(const CAN_TypeDef* bus, const CAN_Callback method, uint32_t mask)
+void CAN_SetCallback(const CAN_TypeDef* bus, const CAN_Callback method)
 {
-  // Find callbacks for the current bus
+  // Find the current bus
   struct CAN_BusData* storage = CAN_GetBusData(bus);
 
-  if (storage->numCallbacks == CAN_MAX_CALLBACKS) {
-    // cannot add any more
-    // TODO: error
-    return;
-  }
-
-  // Create callback entry, add to list
-  struct CAN_Callback_Info callback;
-  callback.call = method;
-  callback.mask = mask;
-
-  storage->callbacks[storage->numCallbacks] = callback;
-  ++storage->numCallbacks;
+  // Store callback
+  storage->callback = method;
 }
 
 void CAN_SendMessage(const CAN_TypeDef* bus, uint32_t msgId, uint8_t* data, size_t n)

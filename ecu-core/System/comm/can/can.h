@@ -11,7 +11,6 @@
 #include "stm32f7xx_hal.h"
 #include <stdint.h>
 
-#define CAN_MAX_CALLBACKS 5   /* Max number of callbacks per bus */
 #define CAN_MAX_BUSSES 3    /* Max number of CAN busses */
 
 /**
@@ -32,25 +31,12 @@ void CAN_Config(CAN_HandleTypeDef* handle);
 
 /**
  * @brief Adds a method to the callback list. Method will be invoked when a
- * CAN frame is received that matches the mask.
- *
- * The callback will be called if ID & !mask == 0
- * (i.e. the mask bits must be 1 on the ID bits for the ID to match)
- *
- * Eg:
- * ID:     0x38  = 0011 1000
- * Mask:   0x3F  = 0011 1111
- * MSG & !Mask   = 0000 0000 => Callback invoked
- *
- * ID:     0x38  = 0011 1000
- * Mask:   0x8F  = 1000 1111
- * MSG & !filter = 0011 0000 => Callback not invoked
+ * CAN frame is received.
  *
  * @param bus CAN bus to use. I.e. CAN1/2/3
  * @param callback Method to call during callback
- * @param mask Mask to filter CAN frame ID
  */
-void CAN_RegisterCallback(const CAN_TypeDef* bus, const CAN_Callback callback, uint32_t mask);
+void CAN_SetCallback(const CAN_TypeDef* bus, const CAN_Callback callback);
 
 /**
  * @brief Send a message on the CAN bus
