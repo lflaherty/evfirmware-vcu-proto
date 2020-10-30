@@ -19,11 +19,12 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "cmsis_os.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include "FreeRTOS.h"
+#include "task.h"
 #include "comm/can/can.h"
 /* USER CODE END Includes */
 
@@ -44,7 +45,6 @@
 /* Private variables ---------------------------------------------------------*/
 CAN_HandleTypeDef hcan1;
 
-osThreadId defaultTaskHandle;
 /* USER CODE BEGIN PV */
 CAN_TxHeaderTypeDef   TxHeader;
 CAN_RxHeaderTypeDef   RxHeader;
@@ -52,15 +52,40 @@ uint8_t               TxData[8];
 uint8_t               RxData[8];
 uint32_t              TxMailbox;
 
+unsigned int count = 0;
+unsigned int err = 0;
+
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_CAN1_Init(void);
-void StartDefaultTask(void const * argument);
-
 /* USER CODE BEGIN PFP */
+void vTaskMain(void* pvParameters)
+{
+  while (1) {
+      TickType_t ticks = 1000 / portTICK_PERIOD_MS;
+      vTaskDelay(ticks ? ticks : 1);
+
+    HAL_GPIO_TogglePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin);
+
+    // setup CAN data
+    TxData[0] = (count >> 8) & 0xFF;
+    TxData[1] = count & 0xFF;
+    TxData[2] = 0x68;
+    TxData[3] = 0x04;
+    TxData[4] = 0x20;
+    TxData[5] = 0xAF;
+
+    /* Start the Transmission process */
+    CAN_SendMessage(CAN1, 0x5A1, TxData, 8);
+
+    count++;
+    printf("Count %d\n", count);
+  }
+}
 
 /* USER CODE END PFP */
 
@@ -74,9 +99,6 @@ int _write(int file, char *ptr, int len)
     ITM_SendChar((*ptr++));
   return len;
 }
-
-unsigned int count = 0;
-unsigned int err = 0;
 
 /* USER CODE END 0 */
 
@@ -118,37 +140,27 @@ int main(void)
   CAN_Config(&hcan1);
   // TODO setup callback
 
+  // create main task
+  BaseType_t xReturned;
+  TaskHandle_t xHandle = NULL;
+  xReturned = xTaskCreate(
+      vTaskMain,
+      "MAIN",
+      128,   /* Stack size */
+      NULL,  /* Parameter passed as pointer */
+      tskIDLE_PRIORITY,
+      &xHandle);
+
+  if (xReturned != pdPASS)
+  {
+    printf("Failed to create main task\n");
+  }
+
+  // start RTOS
+  vTaskStartScheduler();
+
   /* USER CODE END 2 */
 
-  /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
-  /* USER CODE END RTOS_MUTEX */
-
-  /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
-  /* USER CODE END RTOS_SEMAPHORES */
-
-  /* USER CODE BEGIN RTOS_TIMERS */
-  /* start timers, add new ones, ... */
-  /* USER CODE END RTOS_TIMERS */
-
-  /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
-  /* USER CODE END RTOS_QUEUES */
-
-  /* Create the thread(s) */
-  /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
-  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
-
-  /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
-  /* USER CODE END RTOS_THREADS */
-
-  /* Start scheduler */
-  osKernelStart();
-
-  /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -156,22 +168,22 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    HAL_Delay(1000);
-    HAL_GPIO_TogglePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin);
-
-    // setup CAN data
-    TxData[0] = (count >> 8) & 0xFF;
-    TxData[1] = count & 0xFF;
-    TxData[2] = 0x68;
-    TxData[3] = 0x04;
-    TxData[4] = 0x20;
-    TxData[5] = 0xAF;
-
-    /* Start the Transmission process */
-    CAN_SendMessage(CAN1, 0x5A1, TxData, 8);
-
-    count++;
-    printf("Count %d\n", count);
+//    HAL_Delay(1000);
+//    HAL_GPIO_TogglePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin);
+//
+//    // setup CAN data
+//    TxData[0] = (count >> 8) & 0xFF;
+//    TxData[1] = count & 0xFF;
+//    TxData[2] = 0x68;
+//    TxData[3] = 0x04;
+//    TxData[4] = 0x20;
+//    TxData[5] = 0xAF;
+//
+//    /* Start the Transmission process */
+//    CAN_SendMessage(CAN1, 0x5A1, TxData, 8);
+//
+//    count++;
+//    printf("Count %d\n", count);
 
   }
   /* USER CODE END 3 */
@@ -293,45 +305,6 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
-
-/* USER CODE BEGIN Header_StartDefaultTask */
-/**
-  * @brief  Function implementing the defaultTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
-/* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void const * argument)
-{
-  /* USER CODE BEGIN 5 */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END 5 */
-}
-
-/**
-  * @brief  Period elapsed callback in non blocking mode
-  * @note   This function is called  when TIM1 interrupt took place, inside
-  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
-  * a global variable "uwTick" used as application time base.
-  * @param  htim : TIM handle
-  * @retval None
-  */
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-  /* USER CODE BEGIN Callback 0 */
-
-  /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM1) {
-    HAL_IncTick();
-  }
-  /* USER CODE BEGIN Callback 1 */
-
-  /* USER CODE END Callback 1 */
-}
 
 /**
   * @brief  This function is executed in case of error occurrence.
