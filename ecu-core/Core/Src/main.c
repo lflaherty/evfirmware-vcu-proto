@@ -168,22 +168,6 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-//    HAL_Delay(1000);
-//    HAL_GPIO_TogglePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin);
-//
-//    // setup CAN data
-//    TxData[0] = (count >> 8) & 0xFF;
-//    TxData[1] = count & 0xFF;
-//    TxData[2] = 0x68;
-//    TxData[3] = 0x04;
-//    TxData[4] = 0x20;
-//    TxData[5] = 0xAF;
-//
-//    /* Start the Transmission process */
-//    CAN_SendMessage(CAN1, 0x5A1, TxData, 8);
-//
-//    count++;
-//    printf("Count %d\n", count);
 
   }
   /* USER CODE END 3 */
