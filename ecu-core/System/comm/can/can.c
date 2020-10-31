@@ -57,20 +57,9 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
     printf("error in recv\n");
     return;
   }
-  printf("received CAN data\n");
 
-  // TODO process data
-  /*
-   * e.g:
-   * if ((RxHeader.StdId == 0x5A1) && (RxHeader.IDE == CAN_ID_STD) && (RxHeader.DLC == 8))
-    {
-      // Do stuff with RxData[x]
-      for (uint8_t i = 0; i < 8; ++i)
-      {
-        printf("%x ", RxData[i]);
-      }
-    }
-   */
+  struct CAN_BusData* busData = CAN_GetBusData(hcan->Instance);
+  busData->callback(rxHeader.StdId, rxData, rxHeader.DLC);
 }
 
 // ------------------- Public methods -------------------

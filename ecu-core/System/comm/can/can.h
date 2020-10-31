@@ -15,8 +15,12 @@
 
 /**
  * @brief Callback method typedef
+ * Params:
+ *    Msg ID
+ *    Array (of up to 8) of data points
+ *    Length of data
  */
-typedef void (*CAN_Callback)(void);
+typedef void (*CAN_Callback)(uint32_t, uint8_t*, size_t);
 
 /**
  * @brief Initialize CAN driver interface

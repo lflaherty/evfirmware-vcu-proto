@@ -82,6 +82,17 @@ void vTaskMain(void* pvParameters)
   }
 }
 
+void canCallback(uint32_t msgId, uint8_t* data, size_t len)
+{
+  printf("CAN received from %lx: ", msgId);
+  size_t i;
+  for (i = 0; i < len; ++i)
+  {
+    printf(" %x", data[i]);
+  }
+  printf("\n");
+}
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -133,6 +144,7 @@ int main(void)
 
   CAN_Init();
   CAN_Config(&hcan1);
+  CAN_SetCallback(CAN1, canCallback);
   // TODO setup callback
 
   // create main task
