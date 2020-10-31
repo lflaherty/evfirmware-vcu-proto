@@ -8,7 +8,7 @@
 #include "can.h"
 
 #include <string.h>
-
+#include <stdio.h>
 
 // ------------------- Private data -------------------
 
@@ -54,8 +54,10 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
   /* Get RX message */
   if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rxHeader, rxData) != HAL_OK) {
     // TODO handle error
+    printf("error in recv\n");
     return;
   }
+  printf("received CAN data\n");
 
   // TODO process data
   /*
@@ -102,20 +104,25 @@ void CAN_Config(CAN_HandleTypeDef* handle)
 
   if (HAL_CAN_ConfigFilter(storage->handle, &sFilterConfig) != HAL_OK) {
     // TODO error handling
+    printf("error: HAL_CAN_ConfigFilter failed\n");
     return;
   }
 
   // Start bus
   if (HAL_CAN_Start(storage->handle) != HAL_OK) {
     // TODO error handling
+    printf("error: HAL_CAN_Start failed\n");
     return;
   }
 
   //Activate CAN RX interrupt
   if (HAL_CAN_ActivateNotification(storage->handle, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK) {
     // TODO error handling
+    printf("error: HAL_CAN_ActivateNotification failed\n");
     return;
   }
+
+  printf("CAN bus config complete\n");
 }
 
 void CAN_SetCallback(const CAN_TypeDef* bus, const CAN_Callback method)
@@ -146,6 +153,7 @@ void CAN_SendMessage(const CAN_TypeDef* bus, uint32_t msgId, uint8_t* data, size
       busData->handle, &txHeader, data, &busData->txMailbox);
   if (err != HAL_OK) {
     // TODO: error
+    printf("error: failed to send CAN message %d\n", err);
     return;
   }
 }
