@@ -46,12 +46,6 @@
 CAN_HandleTypeDef hcan1;
 
 /* USER CODE BEGIN PV */
-CAN_TxHeaderTypeDef   TxHeader;
-CAN_RxHeaderTypeDef   RxHeader;
-uint8_t               TxData[8];
-uint8_t               RxData[8];
-uint32_t              TxMailbox;
-
 unsigned int count = 0;
 unsigned int err = 0;
 
@@ -66,12 +60,13 @@ static void MX_CAN1_Init(void);
 void vTaskMain(void* pvParameters)
 {
   while (1) {
-      TickType_t ticks = 1000 / portTICK_PERIOD_MS;
-      vTaskDelay(ticks ? ticks : 1);
+    TickType_t ticks = 1000 / portTICK_PERIOD_MS;
+    vTaskDelay(ticks ? ticks : 1);
 
     HAL_GPIO_TogglePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin);
 
     // setup CAN data
+    uint8_t TxData[8];
     TxData[0] = (count >> 8) & 0xFF;
     TxData[1] = count & 0xFF;
     TxData[2] = 0x68;
