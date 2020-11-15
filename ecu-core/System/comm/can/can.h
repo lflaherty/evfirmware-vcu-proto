@@ -13,6 +13,16 @@
 
 #define CAN_MAX_BUSSES 3    /* Max number of CAN busses */
 
+typedef enum
+{
+  CAN_STATUS_OK		              = 0x00U,
+  CAN_STATUS_ERROR_TX           = 0x01U,
+  CAN_STATUS_ERROR_CFG_FILTER   = 0x02U,
+  CAN_STATUS_ERROR_START        = 0x03U,
+  CAN_STATUS_ERROR_START_NOTIFY = 0x04U,
+  CAN_STATUS_ERROR_INVALID_BUS  = 0x05U,
+} CAN_Status_T;
+
 /**
  * @brief Callback method typedef
  * Params:
@@ -25,13 +35,15 @@ typedef void (*CAN_Callback)(uint32_t, uint8_t*, size_t);
 /**
  * @brief Initialize CAN driver interface
  */
-void CAN_Init(void);
+CAN_Status_T CAN_Init(void);
 
 /**
  * @brief Configure CAN bus
  * This should be called from main. Main will retain ownership of handle ptr.
+ *
+ * @return Return status. 0 for success. See CAN_Status_T for more.
  */
-void CAN_Config(CAN_HandleTypeDef* handle);
+CAN_Status_T CAN_Config(CAN_HandleTypeDef* handle);
 
 /**
  * @brief Adds a method to the callback list. Method will be invoked when a
@@ -40,7 +52,7 @@ void CAN_Config(CAN_HandleTypeDef* handle);
  * @param bus CAN bus to use. I.e. CAN1/2/3
  * @param callback Method to call during callback
  */
-void CAN_SetCallback(const CAN_TypeDef* bus, const CAN_Callback callback);
+CAN_Status_T CAN_SetCallback(const CAN_TypeDef* bus, const CAN_Callback callback);
 
 /**
  * @brief Send a message on the CAN bus
@@ -49,7 +61,8 @@ void CAN_SetCallback(const CAN_TypeDef* bus, const CAN_Callback callback);
  * @param msgId CAN Frame ID
  * @param data Array of data to send
  * @param n Length of data array. Max 8.
+ * @return Return status. 0 for success. See CAN_Status_T for more.
  */
-void CAN_SendMessage(const CAN_TypeDef* bus, uint32_t msgId, uint8_t* data, size_t n);
+CAN_Status_T CAN_SendMessage(const CAN_TypeDef* bus, uint32_t msgId, uint8_t* data, size_t n);
 
 #endif /* COMM_CAN_CAN_H_ */
