@@ -11,26 +11,36 @@
 #include "stm32f7xx_hal.h"
 #include <stdint.h>
 
-#define CAN_MAX_BUSSES 3    /* Max number of CAN busses */
+#define CAN_MAX_BUSSES 3      /* Max number of CAN busses */
+#define CAN_NUM_CALLBACKS 16  /* Max number of CAN callbacks on any bus */
 
 typedef enum
 {
-  CAN_STATUS_OK		              = 0x00U,
-  CAN_STATUS_ERROR_TX           = 0x01U,
-  CAN_STATUS_ERROR_CFG_FILTER   = 0x02U,
-  CAN_STATUS_ERROR_START        = 0x03U,
-  CAN_STATUS_ERROR_START_NOTIFY = 0x04U,
-  CAN_STATUS_ERROR_INVALID_BUS  = 0x05U,
+  CAN_STATUS_OK		               = 0x00U,
+  CAN_STATUS_ERROR_TX            = 0x01U,
+  CAN_STATUS_ERROR_CFG_FILTER    = 0x02U,
+  CAN_STATUS_ERROR_START         = 0x03U,
+  CAN_STATUS_ERROR_START_NOTIFY  = 0x04U,
+  CAN_STATUS_ERROR_INVALID_BUS   = 0x05U,
+  CAN_STATUS_ERROR_CALLBACK_FULL = 0x06U
 } CAN_Status_T;
+
+/**
+ * @brief Data structure used to store CAN frames
+ */
+typedef struct {
+  CAN_TypeDef* busInstance;
+  uint32_t canId;
+  uint8_t data[8];
+  uint32_t dlc;
+} CAN_DataFrame_T;
 
 /**
  * @brief Callback method typedef
  * Params:
- *    Msg ID
- *    Array (of up to 8) of data points
- *    Length of data
+ *    CAN data frame
  */
-typedef void (*CAN_Callback)(uint32_t, uint8_t*, size_t);
+typedef void (*CAN_Callback)(const CAN_DataFrame_T*);
 
 /**
  * @brief Initialize CAN driver interface
@@ -41,7 +51,7 @@ CAN_Status_T CAN_Init(void);
  * @brief Configure CAN bus
  * This should be called from main. Main will retain ownership of handle ptr.
  *
- * @return Return status. 0 for success. See CAN_Status_T for more.
+ * @return Return status. CAN_STATUS_OK for success. See CAN_Status_T for more.
  */
 CAN_Status_T CAN_Config(CAN_HandleTypeDef* handle);
 
@@ -51,8 +61,9 @@ CAN_Status_T CAN_Config(CAN_HandleTypeDef* handle);
  *
  * @param bus CAN bus to use. I.e. CAN1/2/3
  * @param callback Method to call during callback
+ * @return Return status. CAN_STATUS_OK for success. See CAN_Status_T for more.
  */
-CAN_Status_T CAN_SetCallback(const CAN_TypeDef* bus, const CAN_Callback callback);
+CAN_Status_T CAN_RegisterCallback(const CAN_TypeDef* bus, const CAN_Callback callback);
 
 /**
  * @brief Send a message on the CAN bus
@@ -61,7 +72,8 @@ CAN_Status_T CAN_SetCallback(const CAN_TypeDef* bus, const CAN_Callback callback
  * @param msgId CAN Frame ID
  * @param data Array of data to send
  * @param n Length of data array. Max 8.
- * @return Return status. 0 for success. See CAN_Status_T for more.
+ * @return Return status. CAN_STATUS_OK for success. See CAN_Status_T for more.
+ * handle->ErrorCode may provide more detailed error information.
  */
 CAN_Status_T CAN_SendMessage(const CAN_TypeDef* bus, uint32_t msgId, uint8_t* data, size_t n);
 

@@ -95,13 +95,13 @@ void vTaskMain(void* pvParameters)
   }
 }
 
-void canCallback(uint32_t msgId, uint8_t* data, size_t len)
+void canCallback(const CAN_DataFrame_T* data)
 {
-  printf("CAN received from %lx: ", msgId);
+  printf("CAN received from %lx: ", data->canId);
   size_t i;
-  for (i = 0; i < len; ++i)
+  for (i = 0; i < data->dlc; ++i)
   {
-    printf(" %x", data[i]);
+    printf(" %x", data->data[i]);
   }
   printf("\n");
 }
@@ -159,7 +159,7 @@ int main(void)
   // CAN bus
   CAN_Init();
   CAN_Config(&hcan1);
-  CAN_SetCallback(CAN1, canCallback);
+  CAN_RegisterCallback(CAN1, canCallback);
 
   // ADC
   if (HAL_ADC_Start_IT(&hadc1) != HAL_OK)
