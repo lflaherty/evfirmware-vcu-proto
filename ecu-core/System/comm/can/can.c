@@ -8,6 +8,8 @@
 #include "can.h"
 
 #include <string.h>
+#include "FreeRTOS.h"
+#include "task.h"
 
 // ------------------- Private data -------------------
 
@@ -24,6 +26,21 @@ static struct CAN_BusData canBusData[CAN_MAX_BUSSES];
 #define CAN_BUS1_INDEX 0
 #define CAN_BUS2_INDEX 1
 #define CAN_BUS3_INDEX 2
+
+// Rx Task definitions
+/**
+ * Stack size for CAN Rx callback thread.
+ * Note the units of this: words
+ * The STM32 has a 32-bit word size.
+ * I.e. 200 word stack size => 200*32bit = 800 Bytes
+ */
+#define STACK_SIZE 200
+
+// Holds the TCB for the CAN Rx callback thread
+static StaticTask_t xTaskBuffer;
+
+// Callback thread will this this as it's stack
+static StackType_t xTask[STACK_SIZE];
 
 
 // ------------------- Private methods -------------------
@@ -54,7 +71,21 @@ static struct CAN_BusData* CAN_GetBusData(const CAN_TypeDef* bus, CAN_Status_T* 
   return storage;
 }
 
+/**
+ * Task code for CAN Rx callback thread
+ */
+static void CAN_RxTask(void* pvParameters)
+{
+  while (1) {
+    // TODO
+  }
+}
 
+/**
+ * @brief CAN Rx interrupt
+ *
+ * @brief hcan CAN Bus handle provided by interrupt
+ */
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
   CAN_RxHeaderTypeDef rxHeader;
@@ -83,11 +114,19 @@ CAN_Status_T CAN_Init(void)
   memset(canBusData, 0, sizeof(canBusData));
 
   // create thread for processing the callbacks outside of an interrupt
-  // TODO
+  TaskHandle_t xHandle = xTaskCreateStatic(
+      CAN_RxTask,
+      "CAN_RxCallback",
+      STACK_SIZE,
+      NULL,               // Parameter passed into the task (none in this case)
+      tskIDLE_PRIORITY,
+      xTask,
+      &xTaskBuffer);
 
   return CAN_STATUS_OK;
 }
 
+//------------------------------------------------------------------------------
 CAN_Status_T CAN_Config(CAN_HandleTypeDef* handle)
 {
   CAN_Status_T retVal;
@@ -128,6 +167,7 @@ CAN_Status_T CAN_Config(CAN_HandleTypeDef* handle)
   return CAN_STATUS_OK;
 }
 
+//------------------------------------------------------------------------------
 CAN_Status_T CAN_SetCallback(const CAN_TypeDef* bus, const CAN_Callback method)
 {
   // Find the current bus
@@ -143,6 +183,7 @@ CAN_Status_T CAN_SetCallback(const CAN_TypeDef* bus, const CAN_Callback method)
   return CAN_STATUS_OK;
 }
 
+//------------------------------------------------------------------------------
 CAN_Status_T CAN_SendMessage(const CAN_TypeDef* bus, uint32_t msgId, uint8_t* data, size_t n)
 {
   // Construct header
