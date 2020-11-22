@@ -26,6 +26,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "comm/can/can.h"
+#include "io/adc/adc.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,19 +45,11 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
+DMA_HandleTypeDef hdma_adc1;
 
 CAN_HandleTypeDef hcan1;
 
 /* USER CODE BEGIN PV */
-
-/* Variable used to get converted value */
-__IO uint16_t uhADC1_0_ConvertedValue = 0;
-__IO uint16_t uhADC1_1_ConvertedValue = 0;
-__IO uint16_t uhADC1_2_ConvertedValue = 0;
-__IO uint16_t uhADC1_3_ConvertedValue = 0;
-__IO uint16_t uhADC1_4_ConvertedValue = 0;
-volatile uint8_t currentADCChannel = 0;
-
 unsigned int count = 0;
 unsigned int err = 0;
 
@@ -66,6 +59,7 @@ unsigned int err = 0;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_CAN1_Init(void);
 static void MX_ADC1_Init(void);
 /* USER CODE BEGIN PFP */
@@ -90,8 +84,8 @@ void vTaskMain(void* pvParameters)
     CAN_SendMessage(CAN1, 0x5A1, TxData, 8);
 
     count++;
-    uint16_t voltage = (330 * uhADC1_3_ConvertedValue) / 4096;
-    printf("Count %d\tADC %d - %dV (x100)\n", count, uhADC1_3_ConvertedValue, voltage);
+    uint16_t voltage = (330 * ADC_Get(ADC1_CHANNEL3)) / 4096;
+    printf("Count %d\tADC %d - %dV (x100)\n", count, ADC_Get(ADC1_CHANNEL3), voltage);
   }
 }
 
@@ -149,6 +143,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_CAN1_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
@@ -162,11 +157,8 @@ int main(void)
   CAN_RegisterCallback(CAN1, canCallback);
 
   // ADC
-  if (HAL_ADC_Start_IT(&hadc1) != HAL_OK)
-  {
-    /* Start Conversation Error */
-    Error_Handler();
-  }
+  ADC_Init();
+  ADC_Config(&hadc1);
 
   // create main task
   BaseType_t xReturned;
@@ -272,14 +264,14 @@ static void MX_ADC1_Init(void)
   hadc1.Instance = ADC1;
   hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
   hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 1;
-  hadc1.Init.DMAContinuousRequests = DISABLE;
+  hadc1.Init.NbrOfConversion = 5;
+  hadc1.Init.DMAContinuousRequests = ENABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
@@ -287,9 +279,41 @@ static void MX_ADC1_Init(void)
   }
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
-  sConfig.Channel = ADC_CHANNEL_3;
+  sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_1;
+  sConfig.Rank = ADC_REGULAR_RANK_2;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_2;
+  sConfig.Rank = ADC_REGULAR_RANK_3;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_3;
+  sConfig.Rank = ADC_REGULAR_RANK_4;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_4;
+  sConfig.Rank = ADC_REGULAR_RANK_5;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -338,6 +362,22 @@ static void MX_CAN1_Init(void)
 }
 
 /**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA2_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -365,56 +405,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* AdcHandle)
-{
-  uhADC1_3_ConvertedValue = HAL_ADC_GetValue(AdcHandle);
-//  // Settings for next conversion
-//  ADC_ChannelConfTypeDef sConfig = {0};
-//  sConfig.Rank = ADC_REGULAR_RANK_1;
-//  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
-//
-//  // Measure the current ADC channel, and start the conversion for the next channel
-//  switch (currentADCChannel)
-//  {
-//  case 0:
-//    uhADC1_0_ConvertedValue = HAL_ADC_GetValue(AdcHandle);
-//    sConfig.Channel = ADC_CHANNEL_1;
-//    currentADCChannel = 1;
-//    break;
-//  case 1:
-//    uhADC1_1_ConvertedValue = HAL_ADC_GetValue(AdcHandle);
-//    sConfig.Channel = ADC_CHANNEL_2;
-//    currentADCChannel = 2;
-//    break;
-//  case 2:
-//    uhADC1_2_ConvertedValue = HAL_ADC_GetValue(AdcHandle);
-//    sConfig.Channel = ADC_CHANNEL_3;
-//    currentADCChannel = 3;
-//    break;
-//  case 3:
-//    uhADC1_3_ConvertedValue = HAL_ADC_GetValue(AdcHandle);
-//    sConfig.Channel = ADC_CHANNEL_4;
-//    currentADCChannel = 4;
-//    break;
-//  case 4:
-//    uhADC1_4_ConvertedValue = HAL_ADC_GetValue(AdcHandle);
-//    sConfig.Channel = ADC_CHANNEL_0;
-//    currentADCChannel = 0;
-//    break;
-//  default:
-//    sConfig.Channel = ADC_CHANNEL_0;
-//    currentADCChannel = 0;
-//  }
 
-  // Doing this blocks...
-  // TODO implement this correctly
-//  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
-//
-//  HAL_ADC_Start_IT(&hadc1) ;
-}
 
 
 /* USER CODE END 4 */
