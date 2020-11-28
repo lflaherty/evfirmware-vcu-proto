@@ -25,8 +25,6 @@
 #include <stdio.h>
 #include "FreeRTOS.h"
 #include "task.h"
-#include "comm/can/can.h"
-#include "io/adc/adc.h"
 
 #include "initialize.h"
 /* USER CODE END Includes */
@@ -52,8 +50,6 @@ DMA_HandleTypeDef hdma_adc1;
 CAN_HandleTypeDef hcan1;
 
 /* USER CODE BEGIN PV */
-unsigned int count = 0;
-unsigned int err = 0;
 
 
 /* USER CODE END PV */
@@ -65,42 +61,6 @@ static void MX_DMA_Init(void);
 static void MX_CAN1_Init(void);
 static void MX_ADC1_Init(void);
 /* USER CODE BEGIN PFP */
-void vTaskMain(void* pvParameters)
-{
-  while (1) {
-    TickType_t ticks = 1000 / portTICK_PERIOD_MS;
-    vTaskDelay(ticks ? ticks : 1);
-
-    HAL_GPIO_TogglePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin);
-
-    // setup CAN data
-    uint8_t TxData[8];
-    TxData[0] = (count >> 8) & 0xFF;
-    TxData[1] = count & 0xFF;
-    TxData[2] = 0x68;
-    TxData[3] = 0x04;
-    TxData[4] = 0x20;
-    TxData[5] = 0xAF;
-
-    /* Start the Transmission process */
-    CAN_SendMessage(CAN1, 0x5A1, TxData, 8);
-
-    count++;
-    uint16_t voltage = (330 * ADC_Get(ADC1_CHANNEL3)) / 4096;
-    printf("Count %d\tADC %d - %dV (x100)\n", count, ADC_Get(ADC1_CHANNEL3), voltage);
-  }
-}
-
-void canCallback(const CAN_DataFrame_T* data)
-{
-  printf("CAN received from %lx: ", data->canId);
-  size_t i;
-  for (i = 0; i < data->dlc; ++i)
-  {
-    printf(" %x", data->data[i]);
-  }
-  printf("\n");
-}
 
 /* USER CODE END PFP */
 
@@ -153,24 +113,10 @@ int main(void)
 
   printf("\n");
   printf("Main initialize...\n");
-  ECU_Init();
-
-  CAN_RegisterCallback(CAN1, canCallback);
-
-  // create main task
-  BaseType_t xReturned;
-  TaskHandle_t xHandle = NULL;
-  xReturned = xTaskCreate(
-      vTaskMain,
-      "MAIN",
-      128,   /* Stack size */
-      NULL,  /* Parameter passed as pointer */
-      tskIDLE_PRIORITY,
-      &xHandle);
-
-  if (xReturned != pdPASS)
-  {
-    printf("Failed to create main task\n");
+  ECU_Init_Status_T initStatus = ECU_Init();
+  if (initStatus != ECU_INIT_OK) {
+    printf("Initialization error, halting\n");
+    Error_Handler();
   }
 
   // start RTOS

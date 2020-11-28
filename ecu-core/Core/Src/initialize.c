@@ -8,6 +8,7 @@
 #include "initialize.h"
 
 #include <stdio.h>
+#include "example/example.h"
 #include "comm/can/can.h"
 #include "io/adc/adc.h"
 
@@ -58,6 +59,14 @@ static ECU_Init_Status_T ECU_Init_System(void)
 //------------------------------------------------------------------------------
 static ECU_Init_Status_T ECU_Init_Application(void)
 {
+  // Example process
+  Example_Status_T status;
+  status = Example_Init();
+  if (status != EXAMPLE_STATUS_OK) {
+    printf("Example process init error %u", status);
+    return ECU_INIT_ERROR;
+  }
+
   return ECU_INIT_OK;
 }
 
