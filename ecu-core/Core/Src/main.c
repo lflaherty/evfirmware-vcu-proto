@@ -27,6 +27,8 @@
 #include "task.h"
 #include "comm/can/can.h"
 #include "io/adc/adc.h"
+
+#include "initialize.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -104,6 +106,7 @@ void canCallback(const CAN_DataFrame_T* data)
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+// TODO: move this somewhere appropriate
 int _write(int file, char *ptr, int len)
 {
   /* Implement your write code here, this is used by puts and printf for example */
@@ -149,16 +152,10 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   printf("\n");
-  printf("Initialize\n");
+  printf("Main initialize...\n");
+  ECU_Init();
 
-  // CAN bus
-  CAN_Init();
-  CAN_Config(&hcan1);
   CAN_RegisterCallback(CAN1, canCallback);
-
-  // ADC
-  ADC_Init();
-  ADC_Config(&hadc1);
 
   // create main task
   BaseType_t xReturned;
