@@ -23,6 +23,10 @@ static unsigned int count = 0;
 #define LED_STATUS_GPIO_Port GPIOB
 
 
+// TODO pass this as a parameter
+extern CAN_HandleTypeDef hcan1;
+
+
 // ------------------- Private methods -------------------
 static void Example_TaskMain(void* pvParameters)
 {
@@ -42,7 +46,7 @@ static void Example_TaskMain(void* pvParameters)
     TxData[5] = 0xAF;
 
     /* Start the Transmission process */
-    CAN_SendMessage(CAN1, 0x5A1, TxData, 8);
+    CAN_SendMessage(&hcan1, 0x5A1, TxData, 8);
 
     count++;
     uint16_t voltage = (330 * ADC_Get(ADC1_CHANNEL3)) / 4096;
@@ -52,7 +56,7 @@ static void Example_TaskMain(void* pvParameters)
 
 static void Example_canCallback(const CAN_DataFrame_T* data)
 {
-  printf("CAN received from %lx: ", data->canId);
+  printf("CAN received from %lx: ", data->msgId);
   size_t i;
   for (i = 0; i < data->dlc; ++i)
   {
@@ -65,7 +69,7 @@ static void Example_canCallback(const CAN_DataFrame_T* data)
 Example_Status_T Example_Init(void)
 {
   // Register to receive messages from CAN1
-  CAN_RegisterCallback(CAN1, Example_canCallback);
+  CAN_RegisterCallback(&hcan1, 0x5A1, Example_canCallback);
 
   // create main task
   BaseType_t xReturned;

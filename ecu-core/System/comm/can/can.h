@@ -11,8 +11,17 @@
 #include "stm32f7xx_hal.h"
 #include <stdint.h>
 
-#define CAN_MAX_BUSSES 3      /* Max number of CAN busses */
-#define CAN_NUM_CALLBACKS 16  /* Max number of CAN callbacks on any bus */
+#define CAN_QUEUE_LENGTH  50       /* 50 messages */
+#define CAN_NUM_CALLBACKS 16       /* Max number of CAN callbacks on any bus */
+
+/**
+ * Stack size for CAN Rx callback thread.
+ * Note the units of this: words
+ * The STM32 has a 32-bit word size.
+ * I.e. 200 word stack size => 200*32bit = 800 Bytes
+ * This will be the same stack in the call-back methods
+ */
+#define STACK_SIZE 200
 
 typedef enum
 {
@@ -30,7 +39,7 @@ typedef enum
  */
 typedef struct {
   CAN_TypeDef* busInstance;
-  uint32_t canId;
+  uint32_t msgId;
   uint8_t data[8];
   uint32_t dlc;
 } CAN_DataFrame_T;
@@ -40,7 +49,7 @@ typedef struct {
  * Params:
  *    CAN data frame
  */
-typedef void (*CAN_Callback)(const CAN_DataFrame_T*);
+typedef void (*CAN_Callback_Method)(const CAN_DataFrame_T*);
 
 /**
  * @brief Initialize CAN driver interface
@@ -59,22 +68,26 @@ CAN_Status_T CAN_Config(CAN_HandleTypeDef* handle);
  * @brief Adds a method to the callback list. Method will be invoked when a
  * CAN frame is received.
  *
- * @param bus CAN bus to use. I.e. CAN1/2/3
+ * @param handle CAN Bus device handle
+ * @param msgId message ID
  * @param callback Method to call during callback
  * @return Return status. CAN_STATUS_OK for success. See CAN_Status_T for more.
  */
-CAN_Status_T CAN_RegisterCallback(const CAN_TypeDef* bus, const CAN_Callback callback);
+CAN_Status_T CAN_RegisterCallback(
+    const CAN_HandleTypeDef* handle,
+    const uint32_t msgId,
+    const CAN_Callback_Method callback);
 
 /**
  * @brief Send a message on the CAN bus
  *
- * @param bus CAN bus to use. I.e. CAN1/2/3
+ * @param handle CAN Bus device handle
  * @param msgId CAN Frame ID
  * @param data Array of data to send
  * @param n Length of data array. Max 8.
  * @return Return status. CAN_STATUS_OK for success. See CAN_Status_T for more.
  * handle->ErrorCode may provide more detailed error information.
  */
-CAN_Status_T CAN_SendMessage(const CAN_TypeDef* bus, uint32_t msgId, uint8_t* data, size_t n);
+CAN_Status_T CAN_SendMessage(const CAN_HandleTypeDef* handle, uint32_t msgId, uint8_t* data, size_t n);
 
 #endif /* COMM_CAN_CAN_H_ */
