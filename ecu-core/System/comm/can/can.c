@@ -30,30 +30,33 @@ static struct {
 
   uint8_t numCallbacks;  // stores how many callbacks are currently registered
   CAN_Callback_T callbacks[CAN_NUM_CALLBACKS];
-} canBusData;
+} canBusInfo;
 
 /* ========= Rx Task definitions ========= */
+static struct {
+  // Task handle for Rx task
+  TaskHandle_t canTaskHandle;
 
-// Task handle for Rx task
-static TaskHandle_t canTaskHandle;
+  // Holds the TCB for the CAN Rx callback thread
+  StaticTask_t xTaskBuffer;
 
-// Holds the TCB for the CAN Rx callback thread
-static StaticTask_t xTaskBuffer;
-
-// Callback thread will this this as it's stack
-static StackType_t xTask[STACK_SIZE];
+  // Callback thread will this this as it's stack
+  StackType_t xTask[STACK_SIZE];
+} canBusTask;
 
 /* ========= ISR -> Thread queue ========= */
 #define CAN_QUEUE_ITEM_SIZE   sizeof(CAN_DataFrame_T)
 
-// Handle for queue
-static QueueHandle_t canDataQueue;
+static struct {
+  // Handle for queue
+  QueueHandle_t canDataQueue;
 
-// Used to hold queue's data structure
-static StaticQueue_t canDataStaticQueue;
+  // Used to hold queue's data structure
+  StaticQueue_t canDataStaticQueue;
 
-// Used as the queue's storage area.
-uint8_t canDataQueueStorageArea[CAN_QUEUE_LENGTH*CAN_QUEUE_ITEM_SIZE];
+  // Used as the queue's storage area.
+  uint8_t canDataQueueStorageArea[CAN_QUEUE_LENGTH*CAN_QUEUE_ITEM_SIZE];
+} canBusQueue;
 
 
 // ------------------- Private methods -------------------
@@ -74,20 +77,20 @@ static void CAN_RxTask(void* pvParameters)
 
       // Receive data from the queue (and don't block)
       CAN_DataFrame_T canData;
-      BaseType_t recvStatus = xQueueReceive(canDataQueue, &canData, 0);
+      BaseType_t recvStatus = xQueueReceive(canBusQueue.canDataQueue, &canData, 0);
 
       if (recvStatus == pdTRUE) {
         // Call the CAN callback methods
 
-        uint8_t numCallbacks = canBusData.numCallbacks;
+        uint8_t numCallbacks = canBusInfo.numCallbacks;
         for (uint8_t i = 0; i < numCallbacks; ++i) {
           // check the CAN bus instance & the message ID
-          if (canBusData.callbacks[i].busInstance == canData.busInstance &&
-              canBusData.callbacks[i].msgId == canData.msgId) {
+          if (canBusInfo.callbacks[i].busInstance == canData.busInstance &&
+              canBusInfo.callbacks[i].msgId == canData.msgId) {
             // invoke the callback
             // passing the pointer to local variable is ok -
             // it will exist in the local stack frame for the life of the callback
-            canBusData.callbacks[i].callback(&canData);
+            canBusInfo.callbacks[i].callback(&canData);
           }
         }
 
@@ -121,12 +124,12 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
   canData.dlc = rxHeader.DLC;
   // (canData.data directly assigned from HAL_CAN_GetRxMessage)
 
-  BaseType_t status = xQueueSendToBackFromISR(canDataQueue, &canData, NULL);
+  BaseType_t status = xQueueSendToBackFromISR(canBusQueue.canDataQueue, &canData, NULL);
 
   // only notify if adding to the queue worked
   if (status == pdPASS) {
     // Notify waiting thread
-    vTaskNotifyGiveFromISR(canTaskHandle, NULL);
+    vTaskNotifyGiveFromISR(canBusTask.canTaskHandle, NULL);
   }
 }
 
@@ -134,24 +137,24 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 CAN_Status_T CAN_Init(void)
 {
   // Initialize mem to 0
-  memset(&canBusData, 0, sizeof(canBusData));
+  memset(&canBusInfo, 0, sizeof(canBusInfo));
 
   // create thread for processing the callbacks outside of an interrupt
-  canTaskHandle = xTaskCreateStatic(
+  canBusTask.canTaskHandle = xTaskCreateStatic(
       CAN_RxTask,
       "CAN_RxCallback",
       STACK_SIZE,
       NULL,               // Parameter passed into the task (none in this case)
       tskIDLE_PRIORITY,  // TODO: priority?
-      xTask,
-      &xTaskBuffer);
+      canBusTask.xTask,
+      &canBusTask.xTaskBuffer);
 
   // create the ISR -> task data queue
-  canDataQueue = xQueueCreateStatic(
+  canBusQueue.canDataQueue = xQueueCreateStatic(
       CAN_QUEUE_LENGTH,
       CAN_QUEUE_ITEM_SIZE,
-      canDataQueueStorageArea,
-      &canDataStaticQueue);
+      canBusQueue.canDataQueueStorageArea,
+      &canBusQueue.canDataStaticQueue);
 
   return CAN_STATUS_OK;
 }
@@ -159,8 +162,6 @@ CAN_Status_T CAN_Init(void)
 //------------------------------------------------------------------------------
 CAN_Status_T CAN_Config(CAN_HandleTypeDef* handle)
 {
-  CAN_Status_T retVal;
-
   // Filter config
   CAN_FilterTypeDef  sFilterConfig;
 
@@ -198,25 +199,23 @@ CAN_Status_T CAN_RegisterCallback(
     const uint32_t msgId,
     const CAN_Callback_Method method)
 {
-  // Find the current bus
-  CAN_Status_T retVal;
-
   // Store callback
-  if (canBusData.numCallbacks == CAN_NUM_CALLBACKS) {
+  if (canBusInfo.numCallbacks == CAN_NUM_CALLBACKS) {
     // the callback array is already full
     return CAN_STATUS_ERROR_CALLBACK_FULL;
   }
+
   // before incrementing, numCallbacks stores the next index we could add to
-  canBusData.callbacks[canBusData.numCallbacks].busInstance = handle->Instance;
-  canBusData.callbacks[canBusData.numCallbacks].msgId = msgId;
-  canBusData.callbacks[canBusData.numCallbacks].callback = method;
-  canBusData.numCallbacks++;
+  canBusInfo.callbacks[canBusInfo.numCallbacks].busInstance = handle->Instance;
+  canBusInfo.callbacks[canBusInfo.numCallbacks].msgId = msgId;
+  canBusInfo.callbacks[canBusInfo.numCallbacks].callback = method;
+  canBusInfo.numCallbacks++;
 
   return CAN_STATUS_OK;
 }
 
 //------------------------------------------------------------------------------
-CAN_Status_T CAN_SendMessage(const CAN_HandleTypeDef* handle, uint32_t msgId, uint8_t* data, size_t n)
+CAN_Status_T CAN_SendMessage(CAN_HandleTypeDef* handle, uint32_t msgId, uint8_t* data, size_t n)
 {
   // Construct header
   CAN_TxHeaderTypeDef txHeader;
@@ -227,11 +226,8 @@ CAN_Status_T CAN_SendMessage(const CAN_HandleTypeDef* handle, uint32_t msgId, ui
   txHeader.IDE = CAN_ID_STD; // Standard ID
   txHeader.TransmitGlobalTime = DISABLE;
 
-  // Fetch CAN bus details
-  CAN_Status_T retVal;
-
   // Send
-  HAL_StatusTypeDef err = HAL_CAN_AddTxMessage(handle, &txHeader, data, &canBusData.txMailbox);
+  HAL_StatusTypeDef err = HAL_CAN_AddTxMessage(handle, &txHeader, data, &canBusInfo.txMailbox);
   if (err != HAL_OK) {
     return CAN_STATUS_ERROR_TX;
   }
