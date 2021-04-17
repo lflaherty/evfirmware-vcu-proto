@@ -30,7 +30,7 @@ static ECU_Init_Status_T ECU_Init_System(void)
   CAN_Status_T statusCan;
   statusCan = CAN_Init();
   if (statusCan != CAN_STATUS_OK) {
-    printf("CAN Initialization error %u\n", retVal);
+    printf("CAN Initialization error %u\n", statusCan);
     return ECU_INIT_ERROR;
   }
 
@@ -62,7 +62,11 @@ static ECU_Init_Status_T ECU_Init_Application(void)
 {
   // Example process
   Example_Status_T statusEx;
-  CALL_CHECK_D(statusEx, Example_Init(), EXAMPLE_STATUS_OK, "Example process init error %u");
+  statusEx = Example_Init();
+  if (statusEx != EXAMPLE_STATUS_OK) {
+    printf("Example process init error %u", statusEx);
+    return ECU_INIT_ERROR;
+  }
 
   return ECU_INIT_OK;
 }
