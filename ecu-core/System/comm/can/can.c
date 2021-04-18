@@ -165,6 +165,8 @@ CAN_Status_T CAN_Init(void)
 //------------------------------------------------------------------------------
 CAN_Status_T CAN_Config(CAN_HandleTypeDef* handle)
 {
+  printf("CAN_Config begin\n");
+
   // Filter config
   CAN_FilterTypeDef  sFilterConfig;
 
@@ -193,6 +195,7 @@ CAN_Status_T CAN_Config(CAN_HandleTypeDef* handle)
     return CAN_STATUS_ERROR_START_NOTIFY;
   }
 
+  printf("CAN_Config complete\n");
   return CAN_STATUS_OK;
 }
 
