@@ -18,6 +18,10 @@
 // ------------------- Private data -------------------
 static unsigned int count = 0;
 
+#define EX_STACK_SIZE 128
+static StaticTask_t taskBuffer;
+static StackType_t taskStack[EX_STACK_SIZE];
+
 // GPIO pins
 #define LED_STATUS_Pin GPIO_PIN_12
 #define LED_STATUS_GPIO_Port GPIOB
@@ -30,8 +34,9 @@ extern CAN_HandleTypeDef hcan1;
 // ------------------- Private methods -------------------
 static void Example_TaskMain(void* pvParameters)
 {
+  printf("Example_TaskMain begin\n");
   while (1) {
-    TickType_t ticks = 1000 / portTICK_PERIOD_MS;
+    TickType_t ticks = 500 / portTICK_PERIOD_MS;
     vTaskDelay(ticks ? ticks : 1);
 
     HAL_GPIO_TogglePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin);
@@ -68,25 +73,21 @@ static void Example_canCallback(const CAN_DataFrame_T* data)
 // ------------------- Public methods -------------------
 Example_Status_T Example_Init(void)
 {
+  printf("Example_Init begin\n");
   // Register to receive messages from CAN1
-  CAN_RegisterCallback(&hcan1, 0x5A1, Example_canCallback);
+  CAN_RegisterCallback(&hcan1, 0x3A1, Example_canCallback);
 
   // create main task
-  BaseType_t xReturned;
-  TaskHandle_t xHandle = NULL;
-  xReturned = xTaskCreate(
+  TaskHandle_t xHandle;
+  xHandle = xTaskCreateStatic(
       Example_TaskMain,
-      "MAIN",
-      128,   /* Stack size */
+      "ExampleTask",
+      EX_STACK_SIZE,   /* Stack size */
       NULL,  /* Parameter passed as pointer */
       tskIDLE_PRIORITY,
-      &xHandle);
+      taskStack,
+      &taskBuffer);
 
-  if (xReturned != pdPASS)
-  {
-    printf("Failed to create main task\n");
-    return EXAMPLE_STATUS_ERROR;
-  }
-
+  printf("Example_Init complete\n");
   return EXAMPLE_STATUS_OK;
 }
