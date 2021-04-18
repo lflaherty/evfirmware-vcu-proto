@@ -40,18 +40,18 @@ static ECU_Init_Status_T ECU_Init_System(void)
   }
 
   // ADC
-//  ADC_Status_T statusAdc;
-//  statusAdc = ADC_Init();
-//  if (statusAdc != ADC_STATUS_OK) {
-//    printf("ADC initialization error %u\n", statusAdc);
-//    return ECU_INIT_ERROR;
-//  }
-//
-//  statusAdc = ADC_Config(&hadc1);
-//  if (statusAdc != ADC_STATUS_OK) {
-//    printf("ADC config error %u\n", statusAdc);
-//    return ECU_INIT_ERROR;
-//  }
+  ADC_Status_T statusAdc;
+  statusAdc = ADC_Init();
+  if (statusAdc != ADC_STATUS_OK) {
+    printf("ADC initialization error %u\n", statusAdc);
+    return ECU_INIT_ERROR;
+  }
+
+  statusAdc = ADC_Config(&hadc1);
+  if (statusAdc != ADC_STATUS_OK) {
+    printf("ADC config error %u\n", statusAdc);
+    return ECU_INIT_ERROR;
+  }
 
   printf("ECU_Init_System complete\n\n");
   return ECU_INIT_OK;
