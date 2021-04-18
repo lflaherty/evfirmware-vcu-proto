@@ -8,6 +8,7 @@
 #include "can.h"
 
 #include <string.h>
+#include <stdio.h>
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
@@ -41,7 +42,7 @@ static struct {
   StaticTask_t xTaskBuffer;
 
   // Callback thread will this this as it's stack
-  StackType_t xTask[STACK_SIZE];
+  StackType_t xTask[CAN_STACK_SIZE];
 } canBusTask;
 
 /* ========= ISR -> Thread queue ========= */
@@ -136,6 +137,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 // ------------------- Public methods -------------------
 CAN_Status_T CAN_Init(void)
 {
+  printf("CAN_Init begin\n");
   // Initialize mem to 0
   memset(&canBusInfo, 0, sizeof(canBusInfo));
 
@@ -143,7 +145,7 @@ CAN_Status_T CAN_Init(void)
   canBusTask.canTaskHandle = xTaskCreateStatic(
       CAN_RxTask,
       "CAN_RxCallback",
-      STACK_SIZE,
+      CAN_STACK_SIZE,
       NULL,               // Parameter passed into the task (none in this case)
       tskIDLE_PRIORITY,  // TODO: priority?
       canBusTask.xTask,
@@ -156,6 +158,7 @@ CAN_Status_T CAN_Init(void)
       canBusQueue.canDataQueueStorageArea,
       &canBusQueue.canDataStaticQueue);
 
+  printf("CAN_Init complete\n");
   return CAN_STATUS_OK;
 }
 
