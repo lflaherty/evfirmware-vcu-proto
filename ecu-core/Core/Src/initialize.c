@@ -23,8 +23,7 @@ extern CAN_HandleTypeDef hcan1;
 //------------------------------------------------------------------------------
 static ECU_Init_Status_T ECU_Init_System(void)
 {
-  printf("\n");
-  printf("Initializing system components\n");
+  printf("ECU_Init_System begin\n");
 
   // CAN bus
   CAN_Status_T statusCan;
@@ -41,25 +40,27 @@ static ECU_Init_Status_T ECU_Init_System(void)
   }
 
   // ADC
-  ADC_Status_T statusAdc;
-  statusAdc = ADC_Init();
-  if (statusAdc != ADC_STATUS_OK) {
-    printf("ADC initialization error %u\n", statusAdc);
-    return ECU_INIT_ERROR;
-  }
+//  ADC_Status_T statusAdc;
+//  statusAdc = ADC_Init();
+//  if (statusAdc != ADC_STATUS_OK) {
+//    printf("ADC initialization error %u\n", statusAdc);
+//    return ECU_INIT_ERROR;
+//  }
+//
+//  statusAdc = ADC_Config(&hadc1);
+//  if (statusAdc != ADC_STATUS_OK) {
+//    printf("ADC config error %u\n", statusAdc);
+//    return ECU_INIT_ERROR;
+//  }
 
-  statusAdc = ADC_Config(&hadc1);
-  if (statusAdc != ADC_STATUS_OK) {
-    printf("ADC config error %u\n", statusAdc);
-    return ECU_INIT_ERROR;
-  }
-
+  printf("ECU_Init_System complete\n\n");
   return ECU_INIT_OK;
 }
 
 //------------------------------------------------------------------------------
 static ECU_Init_Status_T ECU_Init_Application(void)
 {
+  printf("ECU_Init_Application begin\n");
   // Example process
   Example_Status_T statusEx;
   statusEx = Example_Init();
@@ -68,6 +69,7 @@ static ECU_Init_Status_T ECU_Init_Application(void)
     return ECU_INIT_ERROR;
   }
 
+  printf("ECU_Init_Application complete\n\n");
   return ECU_INIT_OK;
 }
 
