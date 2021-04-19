@@ -56,6 +56,30 @@ static void Example_TaskMain(void* pvParameters)
     count++;
     uint16_t voltage = (330 * ADC_Get(ADC1_CHANNEL3)) / 4096;
     printf("Count %d\tADC %d - %dV (x100)\n", count, ADC_Get(ADC1_CHANNEL3), voltage);
+
+    // Send all the ADCs out on the CAN bus
+    uint16_t adc0 = ADC_Get(ADC1_CHANNEL0);
+    uint16_t adc1 = ADC_Get(ADC1_CHANNEL1);
+    uint16_t adc2 = ADC_Get(ADC1_CHANNEL2);
+    uint16_t adc3 = ADC_Get(ADC1_CHANNEL3);
+    uint16_t adc4 = ADC_Get(ADC1_CHANNEL4);
+
+    uint8_t canMsg1[8] = {0};
+    canMsg1[0] = adc0 & 0xFF;
+    canMsg1[1] = (adc0 >> 8) &0xFF;
+    canMsg1[2] = adc1 & 0xFF;
+    canMsg1[3] = (adc1 >> 8) &0xFF;
+    canMsg1[4] = adc2 & 0xFF;
+    canMsg1[5] = (adc2 >> 8) &0xFF;
+    canMsg1[6] = adc3 & 0xFF;
+    canMsg1[7] = (adc3 >> 8) &0xFF;
+
+    uint8_t canMsg2[8] = {0};
+    canMsg2[0] = adc4 & 0xFF;
+    canMsg2[1] = (adc4 >> 8) & 0xFF;
+
+    CAN_SendMessage(&hcan1, 0x100, canMsg1, 8);
+    CAN_SendMessage(&hcan1, 0x101, canMsg2, 8);
   }
 }
 
@@ -76,6 +100,11 @@ Example_Status_T Example_Init(void)
   printf("Example_Init begin\n");
   // Register to receive messages from CAN1
   CAN_RegisterCallback(&hcan1, 0x3A1, Example_canCallback);
+
+  // ADC1_PUP
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+  // ADC2_PUP
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);
 
   // create main task
   TaskHandle_t xHandle;
