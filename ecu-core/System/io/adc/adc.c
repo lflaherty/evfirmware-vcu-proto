@@ -10,6 +10,7 @@
 #include "stm32f7xx_hal.h"
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 
 #define ADC_NUM_CHANNELS 5  /* Number of channels used */
 #define ADC_NUM_SAMPLES 1   /* Number of samples to take per channel */
@@ -29,6 +30,7 @@ static volatile uint16_t adcData[ADC_NUM_CHANNELS];
 // ------------------- Public methods -------------------
 ADC_Status_T ADC_Init(void)
 {
+  printf("ADC_Init begin\n");
   // Initialize buffers to 0 (can't use memset due to volatile)
   size_t i;
   for (i = 0; i < ADC_BUF_LEN; ++i) {
@@ -38,12 +40,14 @@ ADC_Status_T ADC_Init(void)
     adcData[i] = 0;
   }
 
+  printf("ADC_Init complete\n");
   return ADC_STATUS_OK;
 }
 
 //------------------------------------------------------------------------------
 ADC_Status_T ADC_Config(ADC_HandleTypeDef* handle)
 {
+  printf("ADC_Config begin\n");
   // TODO: this only works for ADC1 (with multiple channels), expand to ADCx
 
   // just need to start DMA
@@ -51,6 +55,7 @@ ADC_Status_T ADC_Config(ADC_HandleTypeDef* handle)
     return ADC_STATUS_ERROR_DMA;
   }
 
+  printf("ADC_Config complete\n");
   return ADC_STATUS_OK;
 }
 
