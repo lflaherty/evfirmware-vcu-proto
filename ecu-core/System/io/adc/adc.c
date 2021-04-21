@@ -45,6 +45,7 @@ ADC_Status_T ADC_Init(void)
 }
 
 //------------------------------------------------------------------------------
+// TODO rename to ADC_Start
 ADC_Status_T ADC_Config(ADC_HandleTypeDef* handle)
 {
   printf("ADC_Config begin\n");

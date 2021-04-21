@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include "example/example.h"
 #include "comm/can/can.h"
+#include "comm/spi/spi.h"
 #include "io/adc/adc.h"
 
 // externs for handles declared in main
@@ -36,6 +37,13 @@ static ECU_Init_Status_T ECU_Init_System(void)
   statusCan = CAN_Config(&hcan1);
   if (statusCan != CAN_STATUS_OK) {
     printf("CAN config error %u\n", statusCan);
+    return ECU_INIT_ERROR;
+  }
+
+  // SPI bus
+  SPI_Status_T statusSpi = SPI_Init();
+  if (statusSpi != SPI_STATUS_OK) {
+    printf("SPI Initialization error %u\n", statusSpi);
     return ECU_INIT_ERROR;
   }
 

@@ -163,6 +163,7 @@ CAN_Status_T CAN_Init(void)
 }
 
 //------------------------------------------------------------------------------
+// Rename to CAN_Start
 CAN_Status_T CAN_Config(CAN_HandleTypeDef* handle)
 {
   printf("CAN_Config begin\n");
