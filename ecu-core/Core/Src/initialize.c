@@ -10,7 +10,9 @@
 #include <stdio.h>
 #include "example/example.h"
 #include "comm/can/can.h"
+#include "comm/spi/spi.h"
 #include "io/adc/adc.h"
+#include "io/ad5592r/ad5592r.h"
 
 // externs for handles declared in main
 extern ADC_HandleTypeDef hadc1;
@@ -18,6 +20,11 @@ extern DMA_HandleTypeDef hdma_adc1;
 
 extern CAN_HandleTypeDef hcan1;
 
+extern SPI_HandleTypeDef hspi4;
+
+// SPI Data for AD5592R
+#define AD5592R_SPI_CS_GPIO_Port GPIOE
+#define AD5592R_SPI_CS_Pin GPIO_PIN_4
 
 
 //------------------------------------------------------------------------------
@@ -39,6 +46,13 @@ static ECU_Init_Status_T ECU_Init_System(void)
     return ECU_INIT_ERROR;
   }
 
+  // SPI bus
+  SPI_Status_T statusSpi = SPI_Init();
+  if (statusSpi != SPI_STATUS_OK) {
+    printf("SPI Initialization error %u\n", statusSpi);
+    return ECU_INIT_ERROR;
+  }
+
   // ADC
   ADC_Status_T statusAdc;
   statusAdc = ADC_Init();
@@ -50,6 +64,21 @@ static ECU_Init_Status_T ECU_Init_System(void)
   statusAdc = ADC_Config(&hadc1);
   if (statusAdc != ADC_STATUS_OK) {
     printf("ADC config error %u\n", statusAdc);
+    return ECU_INIT_ERROR;
+  }
+
+  // AD5592R
+  AD5592R_Status_T statusAD5592R;
+  statusAD5592R = AD5592R_Init(&hspi4, AD5592R_SPI_CS_GPIO_Port, AD5592R_SPI_CS_Pin);
+  if (AD5592R_STATUS_OK != statusAD5592R) {
+    printf("AD5592R initialization error %u\n", statusAD5592R);
+    return ECU_INIT_ERROR;
+  }
+
+  // TODO Setup channels
+  statusAD5592R = AD5592R_ConfigChannel(AD5592R_IO0, AD5592R_MODE_DOUT);
+  if (AD5592R_STATUS_OK != statusAD5592R) {
+    printf("AD5592R config error %u\n", statusAD5592R);
     return ECU_INIT_ERROR;
   }
 
