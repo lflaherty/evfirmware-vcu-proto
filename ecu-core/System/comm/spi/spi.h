@@ -18,6 +18,7 @@
 #define SPI_QUEUE_LENGTH  10       /* 10 SPI messages */
 #define SPI_NUM_CALLBACKS 5        /* Max number of SPI callbacks on any bus */
 
+#define SPI_SYNC_MAX_DATA_LENGTH 16U  /* Max length of data messages transmitted using SPI_TransmitReceiveBlocking */
 
 /**
  * Stack size for SPI Rx callback thread.
@@ -34,7 +35,8 @@ typedef enum
   SPI_STATUS_ERROR_TX            = 0x01U,
   SPI_STATUS_ERROR_BUSY          = 0x02U,
   SPI_STATUS_ERROR_INVALID_BUS   = 0x03U,
-  SPI_STATUS_ERROR_INIT_MUTEX    = 0x04U
+  SPI_STATUS_ERROR_SEM           = 0x04U,
+  SPI_STATUS_ERROR_TOO_MUCH_DATA = 0x05U
 } SPI_Status_T;
 
 /**
@@ -80,6 +82,25 @@ SPI_Status_T SPI_Init(void);
  * @param dataLen length of data arrays
  */
 SPI_Status_T SPI_TransmitReceive(
+    SPI_Device_T* device,
+    uint8_t* txData,
+    uint8_t* rxData,
+    uint16_t dataLen);
+
+/**
+ * @brief Initiates a synchronous Transmit/Receive operation.
+ * This will invoke SPI_TransmitReceive, but will pend (in FreeRTOS) until data is ready.
+ * txData/rxData are not volatile from this call.
+ *
+ * device->callback is internal use only for this method
+ * Do not allocate it, and do not use the variable later
+ *
+ * @param device struct representing the SPI handle, CS pin, and callback for the SPI device
+ * @param txData pointer to data to transmit on SPI
+ * @param rxData pointer to where data received from SPI will be stored
+ * @param dataLen length of data arrays
+ */
+SPI_Status_T SPI_TransmitReceiveBlocking(
     SPI_Device_T* device,
     uint8_t* txData,
     uint8_t* rxData,

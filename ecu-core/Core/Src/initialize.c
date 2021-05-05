@@ -76,9 +76,14 @@ static ECU_Init_Status_T ECU_Init_System(void)
   }
 
   // TODO Setup channels
-  statusAD5592R = AD5592R_ConfigChannel(AD5592R_IO0, AD5592R_MODE_DOUT);
+  statusAD5592R = AD5592R_ConfigChannel(AD5592R_IO0, AD5592R_MODE_DOUT, AD5592R_PULLDOWN_ENABLED);
   if (AD5592R_STATUS_OK != statusAD5592R) {
-    printf("AD5592R config error %u\n", statusAD5592R);
+    printf("AD5592R config IO0 error %u\n", statusAD5592R);
+    return ECU_INIT_ERROR;
+  }
+  statusAD5592R = AD5592R_ConfigChannel(AD5592R_IO1, AD5592R_MODE_AIN, AD5592R_PULLDOWN_ENABLED);
+  if (AD5592R_STATUS_OK != statusAD5592R) {
+    printf("AD5592R config IO1 error %u\n", statusAD5592R);
     return ECU_INIT_ERROR;
   }
 

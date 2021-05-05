@@ -59,6 +59,7 @@
 extern DMA_HandleTypeDef hdma_adc1;
 extern CAN_HandleTypeDef hcan1;
 extern DMA_HandleTypeDef hdma_spi4_rx;
+extern SPI_HandleTypeDef hspi4;
 extern TIM_HandleTypeDef htim1;
 
 /* USER CODE BEGIN EV */
@@ -147,10 +148,10 @@ void UsageFault_Handler(void)
 //void SVC_Handler(void)
 //{
 //  /* USER CODE BEGIN SVCall_IRQn 0 */
-//////////////
+//////
 //  /* USER CODE END SVCall_IRQn 0 */
 //  /* USER CODE BEGIN SVCall_IRQn 1 */
-//////////////
+//////
 //  /* USER CODE END SVCall_IRQn 1 */
 //}
 
@@ -173,10 +174,10 @@ void DebugMon_Handler(void)
 //void PendSV_Handler(void)
 //{
 //  /* USER CODE BEGIN PendSV_IRQn 0 */
-//////////////
+//////
 //  /* USER CODE END PendSV_IRQn 0 */
 //  /* USER CODE BEGIN PendSV_IRQn 1 */
-////////////////
+//////
 //  /* USER CODE END PendSV_IRQn 1 */
 //}
 
@@ -186,10 +187,10 @@ void DebugMon_Handler(void)
 //void SysTick_Handler(void)
 //{
 //  /* USER CODE BEGIN SysTick_IRQn 0 */
-//////////////  HAL_IncTick();
+//////  HAL_IncTick();
 //  /* USER CODE END SysTick_IRQn 0 */
 //  /* USER CODE BEGIN SysTick_IRQn 1 */
-//////////////
+//////
 //  /* USER CODE END SysTick_IRQn 1 */
 //}
 
@@ -254,6 +255,20 @@ void DMA2_Stream3_IRQHandler(void)
   /* USER CODE BEGIN DMA2_Stream3_IRQn 1 */
 
   /* USER CODE END DMA2_Stream3_IRQn 1 */
+}
+
+/**
+  * @brief This function handles SPI4 global interrupt.
+  */
+void SPI4_IRQHandler(void)
+{
+  /* USER CODE BEGIN SPI4_IRQn 0 */
+
+  /* USER CODE END SPI4_IRQn 0 */
+  HAL_SPI_IRQHandler(&hspi4);
+  /* USER CODE BEGIN SPI4_IRQn 1 */
+
+  /* USER CODE END SPI4_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

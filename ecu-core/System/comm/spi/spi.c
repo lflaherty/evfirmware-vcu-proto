@@ -37,8 +37,6 @@ typedef enum
 typedef struct {
   SPI_Device_T* device;
 
-  bool inUse;                   // True if bus is currently reading/writing
-                                // if false, all other data in SPI_Device_T is considered invalid
   SemaphoreHandle_t mutex;      // Used to protect device while access is attempted
   StaticSemaphore_t mutexBuffer; // Buffer for static mutex
 } SPI_Device_Internal_T;
@@ -73,6 +71,20 @@ static struct {
   uint8_t spiDataQueueStorageArea[SPI_QUEUE_LENGTH*SPI_QUEUE_ITEM_SIZE];
 } spiBusQueue;
 
+/* ========= Data for synchronous call ========= */
+static struct {
+  // mutex for locking SPI_TransmitReceiveBlocking
+  SemaphoreHandle_t spiBusyMutex;
+  StaticSemaphore_t spiBusyMutexBuffer;
+
+  // binary semaphore for signaling from the SPI callback to SPI_TransmitReceiveBlocking
+  SemaphoreHandle_t signalSem;
+  StaticSemaphore_t signalSemBuffer;
+
+  uint8_t rxData[SPI_SYNC_MAX_DATA_LENGTH]; // TODO should this be volatile?
+  uint8_t txData[SPI_SYNC_MAX_DATA_LENGTH];
+} spiSync;
+
 
 
 
@@ -97,6 +109,8 @@ static SPI_Index_T getSPIBusIndex(SPI_TypeDef* spiBus) {
  */
 static void SPI_RxTask(void* pvParameters)
 {
+  printf("SPI_RxTask begin\n");
+
   const TickType_t blockTime = 500 / portTICK_PERIOD_MS; // 500ms
   uint32_t notifiedValue;
 
@@ -114,26 +128,19 @@ static void SPI_RxTask(void* pvParameters)
       BaseType_t recvStatus = xQueueReceive(spiBusQueue.spiDataQueue, &spiDevIndex, 0);
 
       if (recvStatus == pdTRUE) {
-        // Call the CAN callback methods
+        // Call the SPI callback methods
 
-        // acquire mutex
-        // TODO timeout
-        if(xSemaphoreTake(spiDevices[spiDevIndex].mutex, (TickType_t)100) == pdTRUE) {
-          // check that it's still registered as in use...
-          if (spiDevices[spiDevIndex].inUse) {
-            // call the callback
-            // no data needed as the DMA call put the
-            spiDevices[spiDevIndex].device->callback();
-          } else {
-            // not in use, this case shouldn't happen... discard data
-          }
+        // No need to acquire the binary semaphore - it is taken in the TxRx method
+        // and not given back until after the callback
 
-          // mark as no longer in use
-          spiDevices[spiDevIndex].inUse = false;
-
-          // release mutex
-          xSemaphoreGive(spiDevices[spiDevIndex].mutex);
+        // call the callback
+        // no data needed as the DMA call put the
+        if (NULL != spiDevices[spiDevIndex].device->callback) {
+          spiDevices[spiDevIndex].device->callback();
         }
+
+        // pend semaphore (signal that the device is ready again)
+        xSemaphoreGive(spiDevices[spiDevIndex].mutex);
 
         notifiedValue--; // one less notification to process
       } else {
@@ -142,6 +149,15 @@ static void SPI_RxTask(void* pvParameters)
 
     }
   }
+}
+
+/**
+ * Method to synchronize the synchronous TX call SPI_TransmitReceiveBlocking
+ */
+static void SPI_TransmitReceiveBlocking_Callback(void)
+{
+  // Give semaphore to SPI_TransmitReceiveBlocking
+  xSemaphoreGive(spiSync.signalSem);
 }
 
 //------------------------------------------------------------------------------
@@ -157,22 +173,19 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
     return;
   }
 
-  // this should be true but anyway...
-  if (spiDevices[spiDevIndex].inUse == true) {
-    // pull up CS pin
-    HAL_GPIO_WritePin(
-        spiDevices[spiDevIndex].device->csPinBank,
-        spiDevices[spiDevIndex].device->csPin,
-        GPIO_PIN_SET);
+  // pull up CS pin
+  HAL_GPIO_WritePin(
+      spiDevices[spiDevIndex].device->csPinBank,
+      spiDevices[spiDevIndex].device->csPin,
+      GPIO_PIN_SET);
 
-    // push spiIndex to the complete queue & notify
-    BaseType_t status = xQueueSendToBackFromISR(spiBusQueue.spiDataQueue, &spiDevIndex, NULL);
+  // push spiIndex to the complete queue & notify
+  BaseType_t status = xQueueSendToBackFromISR(spiBusQueue.spiDataQueue, &spiDevIndex, NULL);
 
-    // only notify if adding to the queue worked
-    if (status == pdPASS) {
-      // Notify waiting thread
-      vTaskNotifyGiveFromISR(spiBusTask.spiTaskHandle, NULL);
-    }
+  // only notify if adding to the queue worked
+  if (status == pdPASS) {
+    // Notify waiting thread
+    vTaskNotifyGiveFromISR(spiBusTask.spiTaskHandle, NULL);
   }
 }
 
@@ -187,15 +200,35 @@ SPI_Status_T SPI_Init(void)
   for (uint8_t i = 0; i < SPI_NUM_BUSSES; ++i) {
     // invalidate device and create mutex
     spiDevices[i].device = NULL;
-    spiDevices[i].inUse = false;
-    spiDevices[i].mutex =
-        xSemaphoreCreateMutexStatic(&spiDevices[i].mutexBuffer);
+    spiDevices[i].mutex = xSemaphoreCreateBinaryStatic(&spiDevices[i].mutexBuffer);
+//    spiDevices[i].mutex =
+//        xSemaphoreCreateMutexStatic(&spiDevices[i].mutexBuffer);
+
+    // start semaphore as available
+    xSemaphoreGive(spiDevices[i].mutex);
+    // TODO rename mutex to sem
 
     if(spiDevices[i].mutex == NULL) {
       // error in creating mutex semaphore
       // created static, so not expected, but still check...
-      return SPI_STATUS_ERROR_INIT_MUTEX;
+      return SPI_STATUS_ERROR_SEM;
     }
+  }
+
+  // Create mutex for SPI_TransmitReceiveBlocking
+  spiSync.spiBusyMutex = xSemaphoreCreateMutexStatic(&spiSync.spiBusyMutexBuffer);
+  if (NULL == spiSync.spiBusyMutex) {
+    return SPI_STATUS_ERROR_SEM;
+  }
+
+  // Create semaphore for SPI_TransmitReceiveBlocking synchronization
+  spiSync.signalSem = xSemaphoreCreateBinaryStatic(&spiSync.signalSemBuffer);
+  if (NULL == spiSync.signalSem) {
+    return SPI_STATUS_ERROR_SEM;
+  }
+  // initialize semaphore to available
+  if (pdTRUE != xSemaphoreGive(spiSync.signalSem)) {
+    return SPI_STATUS_ERROR_SEM;
   }
 
   // create the ISR -> task data queue
@@ -232,44 +265,83 @@ SPI_Status_T SPI_TransmitReceive(
     return SPI_STATUS_ERROR_INVALID_BUS;
   }
 
-  // Acquire mutex mutex
+  // Acquire mutex
   // TODO timeout
   if (xSemaphoreTake(spiDevices[spiDevIndex].mutex, (TickType_t)10) != pdTRUE) {
     // could not obtain the semaphore and cannot access resource
     return SPI_STATUS_ERROR_BUSY;
   }
 
-  if (spiDevices[spiDevIndex].inUse == false) {
-    // take the device
-    spiDevices[spiDevIndex].device = device;
-    spiDevices[spiDevIndex].inUse = true; // claim usage
-
-    // release mutex
-    xSemaphoreGive(spiDevices[spiDevIndex].mutex);
-  } else {
-    // it's busy :(
-
-    // release mutex before exit (avoid deadlock)
-    xSemaphoreGive(spiDevices[spiDevIndex].mutex);
-    return SPI_STATUS_ERROR_BUSY;
-  }
+  // assign the device
+  spiDevices[spiDevIndex].device = device;
 
   // Pull CS pin low to begin transfer
   HAL_GPIO_WritePin(device->csPinBank, device->csPin, GPIO_PIN_RESET);
 
-  if (HAL_SPI_TransmitReceive_DMA(
-      device->spiHandle, txData, rxData, dataLen) == HAL_OK) {
-    // started transfer ok
-    return SPI_STATUS_OK;
-  } else {
+  // TODO move from IT to DMA
+//  HAL_StatusTypeDef ret = HAL_SPI_TransmitReceive_DMA(
+//      device->spiHandle, txData, rxData, dataLen);
+  HAL_StatusTypeDef ret = HAL_SPI_TransmitReceive_IT(
+      device->spiHandle, txData, rxData, dataLen);
+  if (HAL_OK != ret) {
     // failed transfer
 
     // Pull CS pin back up
     HAL_GPIO_WritePin(device->csPinBank, device->csPin, GPIO_PIN_SET);
+
     return SPI_STATUS_ERROR_TX;
   }
 
   return SPI_STATUS_OK;
 }
 
+//------------------------------------------------------------------------------
+SPI_Status_T SPI_TransmitReceiveBlocking(
+    SPI_Device_T* device,
+    uint8_t* txData,
+    uint8_t* rxData,
+    uint16_t dataLen)
+{
+  if (dataLen > SPI_SYNC_MAX_DATA_LENGTH) {
+    return SPI_STATUS_ERROR_TOO_MUCH_DATA;
+  }
+
+  HAL_StatusTypeDef x = HAL_SPI_TransmitReceive(device->spiHandle, txData, rxData, dataLen, 10U);
+  if (HAL_OK != x) {
+    return SPI_STATUS_ERROR_TX;
+  }
+
+//  // grab the mutex
+//  if (pdTRUE != xSemaphoreTake(spiSync.spiBusyMutex, 10U)) {
+//    return SPI_STATUS_ERROR_SEM;
+//  }
+//
+//  device->callback = SPI_TransmitReceiveBlocking_Callback;
+//  SPI_Status_T ret = SPI_TransmitReceive(device, spiSync.txData, spiSync.rxData, dataLen);
+//  if (SPI_STATUS_OK != ret) {
+//    // release the semaphore
+//    xSemaphoreGive(spiSync.spiBusyMutex);
+//
+//    // error
+//    return ret;
+//  }
+//
+//  // wait for the synchronizing semaphore
+//  if (pdTRUE != xSemaphoreTake(spiSync.signalSem, 10U)) {
+//    // release the semaphore
+//    xSemaphoreGive(spiSync.spiBusyMutex);
+//
+//    return SPI_STATUS_ERROR_SEM;
+//  }
+//
+//  // copy data from volatile arrays into output
+//  // TODO uint16_ts?
+//  memcpy(txData, spiSync.txData, sizeof(uint8_t)*dataLen);
+//  memcpy(rxData, spiSync.rxData, sizeof(uint8_t)*dataLen);
+//
+//  // now release data mutex
+//  xSemaphoreGive(spiSync.spiBusyMutex);
+
+  return SPI_STATUS_OK;
+}
 
