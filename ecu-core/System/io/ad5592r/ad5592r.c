@@ -19,8 +19,6 @@
 
 #include "ad5592rRegisters.h"
 
-#define swab16(data) ((data & 0xFF) << 8) | ((data & 0xFF00) >> 8)
-
 // ------------------- Static data ----------------------
 // Channel data definitions
 #define NUM_CHANNELS 8U
@@ -73,6 +71,7 @@ static SPI_Device_T spiDevice;
 // TODO refactor, this doesn't make sense any more
 static struct {
   bool isConfigStale; // if true, a flush of the config registers is needed
+  bool isResetStale;  // if true, a reset is needed
 
   // mutex for synchronizing access to data
   SemaphoreHandle_t dataLock;
@@ -126,6 +125,27 @@ static AD5592R_RegisterSettings_T AD5592R_GetRegisterSettings(void)
   return dataRegisters;
 }
 
+static AD5592R_Status_T AD5592R_SoftwareReset(void)
+{
+  // Encode message
+  AD5592R_MessageReset_T reset;
+  reset.fields.registerAddress = 0xF;
+  reset.fields.reset = 0x5AC;
+  reset.fields.zero = 0;
+
+  uint16_t rxData = 0;
+
+  if (SPI_STATUS_OK != SPI_TransmitReceiveBlocking(&spiDevice, (uint8_t*)&reset.raw, (uint8_t*)&rxData, 2)) { // 16 bits, so 2 uint8_ts
+    return AD5592R_STATUS_ERROR_SPI;
+  }
+
+  // The device requires a wait of at least 250us (this waits 1ms)
+  TickType_t ticks = 1 / portTICK_PERIOD_MS;
+  vTaskDelay(ticks ? ticks : 1);
+
+  return AD5592R_STATUS_OK;
+}
+
 /*
  * Writes a register
  * @param registerAddress Register address
@@ -140,14 +160,8 @@ static AD5592R_Status_T AD5592R_WriteRegConfig(uint8_t registerAddress, uint8_t 
   configMessage.fields.zero = 0; // ensure this is always zero
 
   uint16_t spiRx = 0;
-//  uint16_t spiTx = swab16(configMessage.raw);  // swap the 16-bit values for the correct ordering
-  uint8_t spiTx[2];
-  spiTx[0] = configMessage.bytes.b0;
-  spiTx[1] = configMessage.bytes.b1;
 
-  printf("Writing register %x words 0x%x, 0x%x\n", registerAddress, spiTx[0], spiTx[1]);
-
-  if (SPI_STATUS_OK != SPI_TransmitReceiveBlocking(&spiDevice, spiTx, (uint8_t*)&spiRx, 2)) { // 16 bits, so 2 uint8_ts
+  if (SPI_STATUS_OK != SPI_TransmitReceiveBlocking(&spiDevice, (uint8_t*)&configMessage.raw, (uint8_t*)&spiRx, 2)) { // 16 bits, so 2 uint8_ts
     return AD5592R_STATUS_ERROR_SPI;
   }
   // No data to process, so don't need to process results (i.e. don't need to take semaphore back again)
@@ -177,22 +191,13 @@ static AD5592R_Status_T AD5592R_AINReadAll(void)
   readAdc.fields.temp = 0U; // don't include temperature reading TODO: actually want this
   readAdc.fields.adc = dataRegisters.enAdc;
 
-//  txData = swab16(readAdc.raw);
-  uint8_t txDataArr[2];
-  txDataArr[0] = readAdc.bytes.b0;
-  txDataArr[1] = readAdc.bytes.b1;
-
-//  printf("ADC Read all sending: 0x%x, 0x%x\n", txDataArr[0], txDataArr[1]);
-
-  SPI_TransmitReceiveBlocking(&spiDevice, txDataArr, (uint8_t*)&rxData, 2);
+  SPI_TransmitReceiveBlocking(&spiDevice, (uint8_t*)&readAdc.raw, (uint8_t*)&rxData, 2);
 
   // Send NOP
   uint16_t NOP = 0;
   rxData = 0;
-  uint8_t rxArray1[2];
   txData = NOP;
-  SPI_TransmitReceiveBlocking(&spiDevice, (uint8_t*)&txData, rxArray1, 2);
-//  printf("ADC Read all NOP channel: [0x%x, 0x%x]\n", rxArray1[0], rxArray1[1]);
+  SPI_TransmitReceiveBlocking(&spiDevice, (uint8_t*)&txData, (uint8_t*)&rxData, 2);
 
   // now receive all the ADC inputs
   uint8_t i;
@@ -200,18 +205,13 @@ static AD5592R_Status_T AD5592R_AINReadAll(void)
     AD5592R_MessageADCConversionResult_T conversionResult;
 
     // Keep sending NOPs & decode into the ADC Conversion result union
-//    rxData = 0;
-    uint8_t rxArray[2];
+    rxData = 0;
     txData = NOP;
-    SPI_TransmitReceiveBlocking(&spiDevice, (uint8_t*)&txData, rxArray, 2);
+    SPI_TransmitReceiveBlocking(&spiDevice, (uint8_t*)&txData, (uint8_t*)&rxData, 2);
 
     // copy the ADC conversion into the stored data
-//    conversionResult.raw = swab16(rxData);
-    conversionResult.bytes.b0 = rxArray[0];
-    conversionResult.bytes.b1 = rxArray[1];
+    conversionResult.raw = rxData;
     channelData[conversionResult.fields.adcAddress & 0x7U].value = conversionResult.fields.adcResult & 0xFFFU;
-
-//    printf("ADC Read all received channel: [0x%x, 0x%x]\n", rxArray[0], rxArray[1]);
   }
 
   // release mutex
@@ -240,9 +240,8 @@ static AD5592R_Status_T AD5592R_AOUTWriteAll(void)
       writeMsg.fields.one = 1U;
 
       // write the SPI message
-      uint16_t txData = swab16(writeMsg.raw);
       uint16_t rxData = 0;
-      SPI_TransmitReceiveBlocking(&spiDevice, (uint8_t*)&txData, (uint8_t*)&rxData, 2);
+      SPI_TransmitReceiveBlocking(&spiDevice, (uint8_t*)&writeMsg.raw, (uint8_t*)&rxData, 2);
     }
   }
 
@@ -259,8 +258,8 @@ static AD5592R_Status_T AD5592R_AOUTWriteAll(void)
 static AD5592R_Status_T AD5592R_DINReadAll(void)
 {
   // To do this, we write the GPIO read config register, then send a NOP
-  uint16_t spiRx;
-  uint16_t spiTx;
+  uint16_t spiRx = 0;
+  uint16_t spiTx = 0;
 
   // encode message using union
   AD5592R_MessageGPIOReadConfigReg_T configMessage = {0};
@@ -277,18 +276,15 @@ static AD5592R_Status_T AD5592R_DINReadAll(void)
     }
   }
 
-  spiRx = 0;
-  spiTx = swab16(configMessage.raw);
-
   // Send the GPIO Read Config Register
-  if (SPI_STATUS_OK != SPI_TransmitReceiveBlocking(&spiDevice, (uint8_t*)&spiTx, (uint8_t*)&spiRx, 2)) { // 16 bits, so 2 uint8_ts
+  if (SPI_STATUS_OK != SPI_TransmitReceiveBlocking(&spiDevice, (uint8_t*)&configMessage.raw, (uint8_t*)&spiRx, 2)) { // 16 bits, so 2 uint8_ts
     return AD5592R_STATUS_ERROR_SPI;
   }
 
   // Send NOP
   uint16_t NOP = 0;
   spiRx = 0;
-  spiRx = NOP;
+  spiTx = NOP;
 
   if (SPI_STATUS_OK != SPI_TransmitReceiveBlocking(&spiDevice, (uint8_t*)&spiTx, (uint8_t*)&spiRx, 2)) {
     return AD5592R_STATUS_ERROR_SPI;
@@ -329,9 +325,8 @@ static AD5592R_Status_T AD5592R_DOUTWriteAll(void)
   }
 
   // write the SPI message
-  uint16_t txData = swab16(writeMsg.raw);
   uint16_t rxData = 0;
-  SPI_TransmitReceiveBlocking(&spiDevice, (uint8_t*)&txData, (uint8_t*)&rxData, 2);
+  SPI_TransmitReceiveBlocking(&spiDevice, (uint8_t*)&writeMsg.raw, (uint8_t*)&rxData, 2);
 
   // release mutex
   xSemaphoreGive(currentOperation.dataLock);
@@ -397,6 +392,15 @@ static void AD5592R_PeriodicTask(void* pvParameters)
 
     // update config on device if needed
     if (pdTRUE == xSemaphoreTake(currentOperation.dataLock, 10U)) {
+      if (currentOperation.isResetStale) {
+        // perform reset
+        AD5592R_Status_T statusReset = AD5592R_SoftwareReset();
+
+        if (AD5592R_STATUS_OK == statusReset) {
+          currentOperation.isResetStale = false;
+        }
+      }
+
       if (currentOperation.isConfigStale) {
         // flush config to device
         AD5592R_Status_T statusFlush = AD5592R_FlushConfig();
@@ -411,12 +415,12 @@ static void AD5592R_PeriodicTask(void* pvParameters)
     }
 
     // read inputs
-    AD5592R_AINReadAll();
-    AD5592R_DINReadAll();
+//    AD5592R_AINReadAll();
+//    AD5592R_DINReadAll();
 
     // write outputs
     AD5592R_AOUTWriteAll();
-    AD5592R_DOUTWriteAll();
+//    AD5592R_DOUTWriteAll();
 
   }
 }
@@ -442,6 +446,9 @@ AD5592R_Status_T AD5592R_Init(
   spiDevice.csPinBank = csPinBank;
   spiDevice.csPin = csPin;
   spiDevice.callback = NULL;  // callback isn't used in blocking methods
+
+  currentOperation.isConfigStale = false;
+  currentOperation.isResetStale = true;
 
   // create data lock mutex
   currentOperation.dataLock = xSemaphoreCreateMutexStatic(&currentOperation.dataLockBuffer);
@@ -569,7 +576,7 @@ AD5592R_Status_T AD5592R_AOUTSet(const AD5592R_Channel_T channel, const uint16_t
   }
 
   // check that mode is correct
-  if (AD5592R_MODE_DOUT != channelData[channel].mode) {
+  if (AD5592R_MODE_AOUT != channelData[channel].mode) {
     return AD5592R_STATUS_INVALID_MODE;
   }
 

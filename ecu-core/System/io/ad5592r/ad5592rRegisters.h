@@ -46,10 +46,6 @@ typedef union {
     uint8_t registerAddress : 4;
     uint8_t zero : 1; // this field is always zero for the register control msg
   } fields;
-  struct {
-    uint8_t b1 : 8;
-    uint8_t b0 : 8;
-  } bytes;
   uint16_t raw;
 } AD5592R_MessageConfigReg_T;
 
@@ -102,10 +98,6 @@ typedef union {
     uint8_t registerAddress : 4; // this is always 0b0010
     uint8_t zero : 1; // this is always 0
   } fields;
-  struct {
-    uint8_t b1 : 8;
-    uint8_t b0 : 8;
-  } bytes;
   uint16_t raw;
 } AD5592R_MessageADCSequenceReg_T;
 
@@ -161,7 +153,7 @@ typedef union {
 typedef union {
   struct {
     uint16_t reset : 11;  // always 0b101 1010 1100
-    uint8_t registerAddress : 4; // always 0b111
+    uint8_t registerAddress : 4; // always 0b1111
     uint8_t zero : 1; // always 0
   } fields;
   uint16_t raw;
@@ -189,10 +181,6 @@ typedef union {
     uint8_t adcAddress : 3;
     uint8_t zero : 1; // this is always 0
   } fields;
-  struct {
-    uint8_t b1 : 8;
-    uint8_t b0 : 8;
-  } bytes;
   uint16_t raw;
 } AD5592R_MessageADCConversionResult_T;
 
