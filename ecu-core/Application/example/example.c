@@ -79,15 +79,14 @@ static void Example_TaskMain(void* pvParameters)
     CAN_SendMessage(&hcan1, 0x101, canMsg2, 8);
 
     // Set one of the outputs on the AD5592R
-    AD5592R_Status_T statusAD5592R = AD5592R_DOUTSet(AD5592R_IO0, 1);
+    AD5592R_Status_T statusAD5592R = AD5592R_AOUTSet(AD5592R_IO0, 512U);
     if (AD5592R_STATUS_OK != statusAD5592R) {
       printf("AD5592R write error %u\n", statusAD5592R);
     }
 
     // Get one of the inputs on the AD5592R
-    uint16_t adcValue = 0xFFFF;
+    uint16_t adcValue = 0xdead;
     statusAD5592R = AD5592R_AINGet(AD5592R_IO1, &adcValue);
-
 
     count++;
 //    uint16_t voltage = (330 * ADC_Get(ADC1_CHANNEL3)) / 4096;
