@@ -306,7 +306,14 @@ SPI_Status_T SPI_TransmitReceiveBlocking(
     return SPI_STATUS_ERROR_TOO_MUCH_DATA;
   }
 
+  // Pull CS pin low to begin transfer
+  HAL_GPIO_WritePin(device->csPinBank, device->csPin, GPIO_PIN_RESET);
+
   HAL_StatusTypeDef x = HAL_SPI_TransmitReceive(device->spiHandle, txData, rxData, dataLen, 10U);
+
+  // Pull CS pin back up
+  HAL_GPIO_WritePin(device->csPinBank, device->csPin, GPIO_PIN_SET);
+
   if (HAL_OK != x) {
     return SPI_STATUS_ERROR_TX;
   }
