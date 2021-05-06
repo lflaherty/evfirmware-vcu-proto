@@ -23,10 +23,13 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include <stdbool.h>
 #include "FreeRTOS.h"
 #include "task.h"
 
 #include "initialize.h"
+
+#include "time/tasktimer/tasktimer.h" /* Used for timer callback ISR */
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -36,6 +39,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+static bool isInitialized;
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -52,6 +56,8 @@ CAN_HandleTypeDef hcan1;
 SPI_HandleTypeDef hspi4;
 DMA_HandleTypeDef hdma_spi4_rx;
 
+TIM_HandleTypeDef htim2;
+
 /* USER CODE BEGIN PV */
 
 
@@ -64,6 +70,7 @@ static void MX_DMA_Init(void);
 static void MX_CAN1_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_SPI4_Init(void);
+static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -89,6 +96,7 @@ int _write(int file, char *ptr, int len)
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+  isInitialized = false;
 
   /* USER CODE END 1 */
 
@@ -116,6 +124,7 @@ int main(void)
   MX_CAN1_Init();
   MX_ADC1_Init();
   MX_SPI4_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 
   printf("\n");
@@ -125,6 +134,8 @@ int main(void)
     printf("Initialization error, halting\n");
     Error_Handler();
   }
+
+  isInitialized = true;
 
   // start RTOS
   printf("Starting scheduler...\n");
@@ -353,6 +364,51 @@ static void MX_SPI4_Init(void)
 }
 
 /**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 999;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 99;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
   * Enable DMA controller clock
   */
 static void MX_DMA_Init(void)
@@ -391,7 +447,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(SPI4_CS_GPIO_Port, SPI4_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, ADC1_PUP_Pin|ADC2_PUP_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, ADC1_PUP_Pin|ADC2_PUP_Pin|SPEED_TEST_GPO_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_RESET);
@@ -403,8 +459,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(SPI4_CS_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : ADC1_PUP_Pin ADC2_PUP_Pin */
-  GPIO_InitStruct.Pin = ADC1_PUP_Pin|ADC2_PUP_Pin;
+  /*Configure GPIO pins : ADC1_PUP_Pin ADC2_PUP_Pin SPEED_TEST_GPO_Pin */
+  GPIO_InitStruct.Pin = ADC1_PUP_Pin|ADC2_PUP_Pin|SPEED_TEST_GPO_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -442,6 +498,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
+
+  // Advance the TaskTimer
+  if (isInitialized) {
+    TaskTimer_TIM_PeriodElapsedCallback(htim);
+  }
 
   /* USER CODE END Callback 1 */
 }

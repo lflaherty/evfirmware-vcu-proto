@@ -9,10 +9,12 @@
 
 #include <stdio.h>
 #include "example/example.h"
+#include "device/wheelspeed/wheelspeed.h"
 #include "comm/can/can.h"
 #include "comm/spi/spi.h"
 #include "io/adc/adc.h"
 #include "io/ad5592r/ad5592r.h"
+#include "time/tasktimer/tasktimer.h"
 
 // externs for handles declared in main
 extern ADC_HandleTypeDef hadc1;
@@ -21,6 +23,8 @@ extern DMA_HandleTypeDef hdma_adc1;
 extern CAN_HandleTypeDef hcan1;
 
 extern SPI_HandleTypeDef hspi4;
+
+extern TIM_HandleTypeDef htim2;
 
 // SPI Data for AD5592R
 #define AD5592R_SPI_CS_GPIO_Port GPIOE
@@ -87,6 +91,14 @@ static ECU_Init_Status_T ECU_Init_System(void)
     return ECU_INIT_ERROR;
   }
 
+  // Timers
+  TaskTimer_Status_T statusTaskTimer = TaskTimer_Init(&htim2);
+  if (TASKTIMER_STATUS_OK != statusTaskTimer) {
+    printf("Task Timer initialization error %u\n", statusTaskTimer);
+    return ECU_INIT_ERROR;
+  }
+
+
   printf("ECU_Init_System complete\n\n");
   return ECU_INIT_OK;
 }
@@ -100,6 +112,13 @@ static ECU_Init_Status_T ECU_Init_Application(void)
   statusEx = Example_Init();
   if (statusEx != EXAMPLE_STATUS_OK) {
     printf("Example process init error %u", statusEx);
+    return ECU_INIT_ERROR;
+  }
+
+  // Wheel speed process
+  WheelSpeed_Status_T statusWheelSpeed = WheelSpeed_Init();
+  if (WHEELSPEED_STATUS_OK != statusWheelSpeed) {
+    printf("WheelSpeed process init error %u", statusWheelSpeed);
     return ECU_INIT_ERROR;
   }
 

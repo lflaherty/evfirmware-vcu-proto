@@ -16,6 +16,7 @@
 #include "semphr.h"
 
 #include "comm/spi/spi.h"
+#include "time/tasktimer/tasktimer.h"
 
 #include "ad5592rRegisters.h"
 
@@ -385,43 +386,48 @@ static void AD5592R_PeriodicTask(void* pvParameters)
 {
   printf("AD5592R_PeriodicTask begin\n");
 
+  const TickType_t blockTime = 10 / portTICK_PERIOD_MS; // 10ms
+  uint32_t notifiedValue;
+
   while (1) {
-    // TODO tie this to a timer rather than a delay
-    TickType_t ticks = 5 / portTICK_PERIOD_MS;
-    vTaskDelay(ticks ? ticks : 1);
+    // Wait for notification to wake up
+    notifiedValue = ulTaskNotifyTake(pdTRUE, blockTime);
+    if (notifiedValue > 0) {
+      // ready to process
 
-    // update config on device if needed
-    if (pdTRUE == xSemaphoreTake(currentOperation.dataLock, 10U)) {
-      if (currentOperation.isResetStale) {
-        // perform reset
-        AD5592R_Status_T statusReset = AD5592R_SoftwareReset();
+      // update config on device if needed
+      if (pdTRUE == xSemaphoreTake(currentOperation.dataLock, 10U)) {
+        if (currentOperation.isResetStale) {
+          // perform reset
+          AD5592R_Status_T statusReset = AD5592R_SoftwareReset();
 
-        if (AD5592R_STATUS_OK == statusReset) {
-          currentOperation.isResetStale = false;
+          if (AD5592R_STATUS_OK == statusReset) {
+            currentOperation.isResetStale = false;
+          }
         }
+
+        if (currentOperation.isConfigStale) {
+          // flush config to device
+          AD5592R_Status_T statusFlush = AD5592R_FlushConfig();
+
+          if (AD5592R_STATUS_OK == statusFlush) {
+            currentOperation.isConfigStale = false;
+          } // TODO, and if statusFlush isn't OK?
+        }
+
+        // release mutex
+        xSemaphoreGive(currentOperation.dataLock);
       }
 
-      if (currentOperation.isConfigStale) {
-        // flush config to device
-        AD5592R_Status_T statusFlush = AD5592R_FlushConfig();
+      // read inputs
+  //    AD5592R_AINReadAll();
+  //    AD5592R_DINReadAll();
 
-        if (AD5592R_STATUS_OK == statusFlush) {
-          currentOperation.isConfigStale = false;
-        } // TODO, and if statusFlush isn't OK?
-      }
+      // write outputs
+      AD5592R_AOUTWriteAll();
+  //    AD5592R_DOUTWriteAll();
 
-      // release mutex
-      xSemaphoreGive(currentOperation.dataLock);
     }
-
-    // read inputs
-//    AD5592R_AINReadAll();
-//    AD5592R_DINReadAll();
-
-    // write outputs
-    AD5592R_AOUTWriteAll();
-//    AD5592R_DOUTWriteAll();
-
   }
 }
 
@@ -465,6 +471,13 @@ AD5592R_Status_T AD5592R_Init(
       tskIDLE_PRIORITY,
       ad5592RTask.xTask,
       &ad5592RTask.xTaskBuffer);
+
+  // Register the task for timer notifications every 5ms
+  uint16_t timerDivider = 5 / TASKTIMER_BASE_PERIOD_MS;
+  TaskTimer_Status_T statusTimer = TaskTimer_RegisterTask(&ad5592RTask.taskHandle, timerDivider);
+  if (TASKTIMER_STATUS_OK != statusTimer) {
+    return AD5592R_STATUS_ERROR_TIME;
+  }
 
   printf("AD5592R_Init complete\n");
   return AD5592R_STATUS_OK;
