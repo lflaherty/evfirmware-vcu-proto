@@ -130,9 +130,9 @@ Example_Status_T Example_Init(void)
   CAN_RegisterCallback(&hcan1, 0x3A1, Example_canCallback);
 
   // ADC1_PUP
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET); // pull up
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET); // 0 (RESET) => pull up
   // ADC2_PUP
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);   // pull down
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);   // 1 (SET) => pull down
 
   // create main task
   exampleTaskHandle = xTaskCreateStatic(
