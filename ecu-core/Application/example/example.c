@@ -13,8 +13,9 @@
 #include "stm32f7xx_hal.h"
 
 #include "comm/can/can.h"
+#include "comm/uart/uart.h"
 #include "io/adc/adc.h"
-#include "io/ad5592r/ad5592r.h"
+//#include "io/ad5592r/ad5592r.h" // TODO remove
 #include "time/tasktimer/tasktimer.h"
 
 // ------------------- Private data -------------------
@@ -33,6 +34,7 @@ static TaskHandle_t exampleTaskHandle;
 
 // TODO pass this as a parameter
 extern CAN_HandleTypeDef hcan1;
+extern UART_HandleTypeDef huart1;
 
 
 // ------------------- Private methods -------------------
@@ -87,25 +89,31 @@ static void Example_TaskMain(void* pvParameters)
       CAN_SendMessage(&hcan1, 0x100, canMsg1, 8);
       CAN_SendMessage(&hcan1, 0x101, canMsg2, 8);
 
+      /* Send something on UART */
+      char hellomsg[] = "Hey..;)\n";
+      UART_SendMessage(&huart1, (uint8_t*)hellomsg, sizeof(hellomsg)/sizeof(char));
+
       // Set one of the outputs on the AD5592R
-      AD5592R_Status_T statusAD5592R = AD5592R_AOUTSet(AD5592R_IO0, 512U);
-      if (AD5592R_STATUS_OK != statusAD5592R) {
-        printf("AD5592R write error %u\n", statusAD5592R);
-      }
+//      AD5592R_Status_T statusAD5592R = AD5592R_AOUTSet(AD5592R_IO0, 512U);
+//      if (AD5592R_STATUS_OK != statusAD5592R) {
+//        printf("AD5592R write error %u\n", statusAD5592R);
+//      }
 
       // Get one of the inputs on the AD5592R
-      uint16_t adcValue = 0xdead;
-      statusAD5592R = AD5592R_AINGet(AD5592R_IO1, &adcValue);
+//      uint16_t adcValue = 0xdead;
+//      statusAD5592R = AD5592R_AINGet(AD5592R_IO1, &adcValue);
 
-      count++;
   //    uint16_t voltage = (330 * ADC_Get(ADC1_CHANNEL3)) / 4096;
-      printf("Count %d\tADC1_CHANNEL3 0x%x\tAD5592 IO1 0x%x (%u)\n",
-          count,
-          ADC_Get(ADC1_CHANNEL3),
-          adcValue,
-          adcValue);
+//      printf("Count %d\tADC1_CHANNEL3 0x%x\tAD5592 IO1 0x%x (%u)\n",
+//          count,
+//          ADC_Get(ADC1_CHANNEL3),
+//          adcValue,
+//          adcValue);
   //    printf("Count %d\tADC1_CHANNEL3 %d - %dV (x100)\n", count, ADC_Get(ADC1_CHANNEL3), voltage);
   //    printf("AD5592R IO1 ADC input: 0x%x (%u)\n", adcValue, adcValue);
+
+
+      count++;
     }
 
   }

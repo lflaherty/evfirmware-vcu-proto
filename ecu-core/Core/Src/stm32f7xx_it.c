@@ -61,6 +61,9 @@ extern CAN_HandleTypeDef hcan1;
 extern DMA_HandleTypeDef hdma_spi4_rx;
 extern SPI_HandleTypeDef hspi4;
 extern TIM_HandleTypeDef htim2;
+extern DMA_HandleTypeDef hdma_usart1_rx;
+extern DMA_HandleTypeDef hdma_usart1_tx;
+extern UART_HandleTypeDef huart1;
 extern TIM_HandleTypeDef htim1;
 
 /* USER CODE BEGIN EV */
@@ -149,10 +152,10 @@ void UsageFault_Handler(void)
 //void SVC_Handler(void)
 //{
 //  /* USER CODE BEGIN SVCall_IRQn 0 */
-////////
+//////////
 //  /* USER CODE END SVCall_IRQn 0 */
 //  /* USER CODE BEGIN SVCall_IRQn 1 */
-////////
+//////////
 //  /* USER CODE END SVCall_IRQn 1 */
 //}
 
@@ -175,10 +178,10 @@ void DebugMon_Handler(void)
 //void PendSV_Handler(void)
 //{
 //  /* USER CODE BEGIN PendSV_IRQn 0 */
-////////
+//////////
 //  /* USER CODE END PendSV_IRQn 0 */
 //  /* USER CODE BEGIN PendSV_IRQn 1 */
-////////
+//////////
 //  /* USER CODE END PendSV_IRQn 1 */
 //}
 
@@ -188,10 +191,10 @@ void DebugMon_Handler(void)
 //void SysTick_Handler(void)
 //{
 //  /* USER CODE BEGIN SysTick_IRQn 0 */
-////////  HAL_IncTick();
+//////////  HAL_IncTick();
 //  /* USER CODE END SysTick_IRQn 0 */
 //  /* USER CODE BEGIN SysTick_IRQn 1 */
-////////
+//////////
 //  /* USER CODE END SysTick_IRQn 1 */
 //}
 
@@ -245,6 +248,20 @@ void TIM2_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles USART1 global interrupt.
+  */
+void USART1_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART1_IRQn 0 */
+
+  /* USER CODE END USART1_IRQn 0 */
+  HAL_UART_IRQHandler(&huart1);
+  /* USER CODE BEGIN USART1_IRQn 1 */
+
+  /* USER CODE END USART1_IRQn 1 */
+}
+
+/**
   * @brief This function handles DMA2 stream0 global interrupt.
   */
 void DMA2_Stream0_IRQHandler(void)
@@ -259,6 +276,20 @@ void DMA2_Stream0_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles DMA2 stream2 global interrupt.
+  */
+void DMA2_Stream2_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA2_Stream2_IRQn 0 */
+
+  /* USER CODE END DMA2_Stream2_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_usart1_rx);
+  /* USER CODE BEGIN DMA2_Stream2_IRQn 1 */
+
+  /* USER CODE END DMA2_Stream2_IRQn 1 */
+}
+
+/**
   * @brief This function handles DMA2 stream3 global interrupt.
   */
 void DMA2_Stream3_IRQHandler(void)
@@ -270,6 +301,20 @@ void DMA2_Stream3_IRQHandler(void)
   /* USER CODE BEGIN DMA2_Stream3_IRQn 1 */
 
   /* USER CODE END DMA2_Stream3_IRQn 1 */
+}
+
+/**
+  * @brief This function handles DMA2 stream7 global interrupt.
+  */
+void DMA2_Stream7_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA2_Stream7_IRQn 0 */
+
+  /* USER CODE END DMA2_Stream7_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_usart1_tx);
+  /* USER CODE BEGIN DMA2_Stream7_IRQn 1 */
+
+  /* USER CODE END DMA2_Stream7_IRQn 1 */
 }
 
 /**
