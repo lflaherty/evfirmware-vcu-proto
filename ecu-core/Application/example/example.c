@@ -90,8 +90,8 @@ static void Example_TaskMain(void* pvParameters)
       CAN_SendMessage(&hcan1, 0x101, canMsg2, 8);
 
       /* Send something on UART */
-      char hellomsg[] = "Hey..;)\n";
-      UART_SendMessage(&huart1, (uint8_t*)hellomsg, sizeof(hellomsg)/sizeof(char));
+//      char hellomsg[] = "Hey..;)\n";
+//      UART_SendMessage(&huart1, (uint8_t*)hellomsg, sizeof(hellomsg)/sizeof(char));
 
       // Set one of the outputs on the AD5592R
 //      AD5592R_Status_T statusAD5592R = AD5592R_AOUTSet(AD5592R_IO0, 512U);
@@ -153,7 +153,7 @@ Example_Status_T Example_Init(void)
       &taskBuffer);
 
   // Register the task for timer notifications every 500ms
-  uint16_t timerDivider = 1000 / TASKTIMER_BASE_PERIOD_MS;
+  uint16_t timerDivider = 1000 * TASKTIMER_BASE_PERIOD_MS;
   TaskTimer_Status_T statusTimer = TaskTimer_RegisterTask(&exampleTaskHandle, timerDivider);
   if (TASKTIMER_STATUS_OK != statusTimer) {
     return EXAMPLE_STATUS_ERROR;
