@@ -141,6 +141,13 @@ CAN_Status_T CAN_Init(void)
   // Initialize mem to 0
   memset(&canBusInfo, 0, sizeof(canBusInfo));
 
+  // create the ISR -> task data queue
+  canBusQueue.canDataQueue = xQueueCreateStatic(
+      CAN_QUEUE_LENGTH,
+      CAN_QUEUE_ITEM_SIZE,
+      canBusQueue.canDataQueueStorageArea,
+      &canBusQueue.canDataStaticQueue);
+
   // create thread for processing the callbacks outside of an interrupt
   canBusTask.canTaskHandle = xTaskCreateStatic(
       CAN_RxTask,
@@ -151,18 +158,12 @@ CAN_Status_T CAN_Init(void)
       canBusTask.xTask,
       &canBusTask.xTaskBuffer);
 
-  // create the ISR -> task data queue
-  canBusQueue.canDataQueue = xQueueCreateStatic(
-      CAN_QUEUE_LENGTH,
-      CAN_QUEUE_ITEM_SIZE,
-      canBusQueue.canDataQueueStorageArea,
-      &canBusQueue.canDataStaticQueue);
-
   printf("CAN_Init complete\n");
   return CAN_STATUS_OK;
 }
 
 //------------------------------------------------------------------------------
+// Rename to CAN_Start
 CAN_Status_T CAN_Config(CAN_HandleTypeDef* handle)
 {
   printf("CAN_Config begin\n");

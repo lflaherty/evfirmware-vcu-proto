@@ -58,10 +58,14 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define SPI4_CS_Pin GPIO_PIN_4
+#define SPI4_CS_GPIO_Port GPIOE
 #define ADC1_PUP_Pin GPIO_PIN_5
 #define ADC1_PUP_GPIO_Port GPIOA
 #define ADC2_PUP_Pin GPIO_PIN_6
 #define ADC2_PUP_GPIO_Port GPIOA
+#define SPEED_TEST_GPO_Pin GPIO_PIN_7
+#define SPEED_TEST_GPO_GPIO_Port GPIOA
 #define LED_STATUS_Pin GPIO_PIN_12
 #define LED_STATUS_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
