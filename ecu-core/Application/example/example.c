@@ -90,8 +90,8 @@ static void Example_TaskMain(void* pvParameters)
       CAN_SendMessage(&hcan1, 0x101, canMsg2, 8);
 
       /* Send something on UART */
-//      char hellomsg[] = "Hey..;)\n";
-//      UART_SendMessage(&huart1, (uint8_t*)hellomsg, sizeof(hellomsg)/sizeof(char));
+      char hellomsg[] = "Hey..;)\n";
+      UART_SendMessage(&huart1, (uint8_t*)hellomsg, sizeof(hellomsg)/sizeof(char));
 
       // Set one of the outputs on the AD5592R
 //      AD5592R_Status_T statusAD5592R = AD5592R_AOUTSet(AD5592R_IO0, 512U);
@@ -121,13 +121,18 @@ static void Example_TaskMain(void* pvParameters)
 
 static void Example_canCallback(const CAN_DataFrame_T* data)
 {
-//  printf("CAN received from %lx: ", data->msgId);
-//  size_t i;
-//  for (i = 0; i < data->dlc; ++i)
-//  {
-//    printf(" %x", data->data[i]);
-//  }
-//  printf("\n");
+  printf("CAN received from %lx: ", data->msgId);
+  size_t i;
+  for (i = 0; i < data->dlc; ++i)
+  {
+    printf(" %x", data->data[i]);
+  }
+  printf("\n");
+}
+
+static void Example_uartCallback(const USART_Data_T* data)
+{
+  printf("UART received byte: %x\n", data->data);
 }
 
 // ------------------- Public methods -------------------
@@ -136,6 +141,7 @@ Example_Status_T Example_Init(void)
   printf("Example_Init begin\n");
   // Register to receive messages from CAN1
   CAN_RegisterCallback(&hcan1, 0x3A1, Example_canCallback);
+  UART_RegisterCallback(&huart1, Example_uartCallback);
 
   // ADC1_PUP
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET); // 0 (RESET) => pull up

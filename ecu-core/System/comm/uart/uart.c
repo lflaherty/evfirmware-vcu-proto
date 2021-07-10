@@ -135,8 +135,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart)
   }
 
   // start the next DMA transfer
-//  HAL_UART_Receive_DMA(handle, uartDmaData, 2);
+  HAL_UART_Receive_DMA(huart, uartDmaData, 2);
   // TODO is this needed?
+}
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+{
+    HAL_UART_DeInit(huart);
+    HAL_UART_Receive_DMA(huart, uartDmaData, 2);
 }
 
 
@@ -174,7 +180,7 @@ UART_Status_T UART_Config(UART_HandleTypeDef* handle)
 {
   printf("UART_Config begin\n");
 
-//  HAL_UART_Receive_DMA(handle, uartDmaData, 2);
+  HAL_UART_Receive_DMA(handle, uartDmaData, 2);
   // TODO is this needed?
 
   printf("UART_Config complete\n");
