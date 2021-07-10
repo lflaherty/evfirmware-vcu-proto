@@ -61,7 +61,7 @@ WheelSpeed_Status_T WheelSpeed_Init(void)
       &taskBuffer);
 
   // Register the task for timer notifications every 1ms
-  uint16_t timerDivider = 1 / TASKTIMER_BASE_PERIOD_MS;
+  uint16_t timerDivider = 1 * TASKTIMER_BASE_PERIOD_MS;
   TaskTimer_Status_T statusTimer = TaskTimer_RegisterTask(&wheelSpeedTaskHandle, timerDivider);
   if (TASKTIMER_STATUS_OK != statusTimer) {
     return WHEELSPEED_STATUS_ERROR;
