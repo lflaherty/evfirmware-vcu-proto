@@ -66,6 +66,10 @@ void Error_Handler(void);
 #define ADC2_PUP_GPIO_Port GPIOA
 #define SPEED_TEST_GPO_Pin GPIO_PIN_7
 #define SPEED_TEST_GPO_GPIO_Port GPIOA
+#define WATCHDOG_ASSERT_Pin GPIO_PIN_10
+#define WATCHDOG_ASSERT_GPIO_Port GPIOE
+#define WATCHDOG_MR_Pin GPIO_PIN_11
+#define WATCHDOG_MR_GPIO_Port GPIOE
 #define LED_STATUS_Pin GPIO_PIN_12
 #define LED_STATUS_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */

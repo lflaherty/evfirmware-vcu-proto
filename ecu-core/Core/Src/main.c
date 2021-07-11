@@ -498,7 +498,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(SPI4_CS_GPIO_Port, SPI4_CS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, SPI4_CS_Pin|WATCHDOG_ASSERT_Pin|WATCHDOG_MR_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, ADC1_PUP_Pin|ADC2_PUP_Pin|SPEED_TEST_GPO_Pin, GPIO_PIN_RESET);
@@ -506,12 +506,12 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : SPI4_CS_Pin */
-  GPIO_InitStruct.Pin = SPI4_CS_Pin;
+  /*Configure GPIO pins : SPI4_CS_Pin WATCHDOG_ASSERT_Pin WATCHDOG_MR_Pin */
+  GPIO_InitStruct.Pin = SPI4_CS_Pin|WATCHDOG_ASSERT_Pin|WATCHDOG_MR_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(SPI4_CS_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
   /*Configure GPIO pins : ADC1_PUP_Pin ADC2_PUP_Pin SPEED_TEST_GPO_Pin */
   GPIO_InitStruct.Pin = ADC1_PUP_Pin|ADC2_PUP_Pin|SPEED_TEST_GPO_Pin;

@@ -8,8 +8,10 @@
 #include "initialize.h"
 
 #include <stdio.h>
+#include "vehicleProcesses/watchdogTrigger/watchdogTrigger.h"
 #include "example/example.h"
 #include "device/wheelspeed/wheelspeed.h"
+#include "device/externalWatchdog/externalWatchdog.h"
 #include "comm/can/can.h"
 #include "comm/uart/uart.h"
 //#include "comm/spi/spi.h" // TODO remove
@@ -125,6 +127,21 @@ static ECU_Init_Status_T ECU_Init_System(void)
 static ECU_Init_Status_T ECU_Init_Application(void)
 {
   printf("ECU_Init_Application begin\n");
+
+  // Wheel speed process
+  WheelSpeed_Status_T statusWheelSpeed = WheelSpeed_Init();
+  if (WHEELSPEED_STATUS_OK != statusWheelSpeed) {
+    printf("WheelSpeed process init error %u", statusWheelSpeed);
+    return ECU_INIT_ERROR;
+  }
+
+  // External watchdog
+  ExternalWatchdog_Status_T extWdgStatus = ExternalWatchdog_Init();
+  if (EXTWATCHDOG_STATUS_OK != extWdgStatus) {
+    printf("ExternalWatchdog process init error %u", extWdgStatus);
+    return ECU_INIT_ERROR;
+  }
+
   // Example process
   Example_Status_T statusEx;
   statusEx = Example_Init();
@@ -133,10 +150,10 @@ static ECU_Init_Status_T ECU_Init_Application(void)
     return ECU_INIT_ERROR;
   }
 
-  // Wheel speed process
-  WheelSpeed_Status_T statusWheelSpeed = WheelSpeed_Init();
-  if (WHEELSPEED_STATUS_OK != statusWheelSpeed) {
-    printf("WheelSpeed process init error %u", statusWheelSpeed);
+  // Watchdog Trigger
+  WatchdogTrigger_Status_T watchdogTriggerStatus = WatchdogTrigger_Init();
+  if (WATCHDOGTRIGGER_STATUS_OK != watchdogTriggerStatus) {
+    printf("WatchdogTrigger process init error %u", watchdogTriggerStatus);
     return ECU_INIT_ERROR;
   }
 
