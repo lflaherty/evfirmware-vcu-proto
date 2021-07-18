@@ -12,7 +12,7 @@
 #include "task.h"
 
 #include "time/tasktimer/tasktimer.h"
-#include "device/externalWatchdog/externalWatchdog.h"
+#include "time/externalWatchdog/externalWatchdog.h"
 
 // ------------------- Private data -------------------
 #define WDG_TRIGGER_STACK_SIZE 128

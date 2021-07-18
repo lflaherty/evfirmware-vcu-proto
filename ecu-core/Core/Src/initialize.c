@@ -6,18 +6,19 @@
  */
 
 #include "initialize.h"
+#include "main.h"
 
 #include <stdio.h>
 #include "vehicleProcesses/watchdogTrigger/watchdogTrigger.h"
 #include "example/example.h"
 #include "device/wheelspeed/wheelspeed.h"
-#include "device/externalWatchdog/externalWatchdog.h"
 #include "comm/can/can.h"
 #include "comm/uart/uart.h"
 //#include "comm/spi/spi.h" // TODO remove
 #include "io/adc/adc.h"
 //#include "io/ad5592r/ad5592r.h"
 #include "time/tasktimer/tasktimer.h"
+#include "time/externalWatchdog/externalWatchdog.h"
 
 // externs for handles declared in main
 extern ADC_HandleTypeDef hadc1;
@@ -118,6 +119,13 @@ static ECU_Init_Status_T ECU_Init_System(void)
     return ECU_INIT_ERROR;
   }
 
+  // External watchdog
+  ExternalWatchdog_Status_T extWdgStatus = ExternalWatchdog_Init(WATCHDOG_MR_GPIO_Port, WATCHDOG_MR_Pin);
+  if (EXTWATCHDOG_STATUS_OK != extWdgStatus) {
+    printf("ExternalWatchdog process init error %u", extWdgStatus);
+    return ECU_INIT_ERROR;
+  }
+
 
   printf("ECU_Init_System complete\n\n");
   return ECU_INIT_OK;
@@ -132,13 +140,6 @@ static ECU_Init_Status_T ECU_Init_Application(void)
   WheelSpeed_Status_T statusWheelSpeed = WheelSpeed_Init();
   if (WHEELSPEED_STATUS_OK != statusWheelSpeed) {
     printf("WheelSpeed process init error %u", statusWheelSpeed);
-    return ECU_INIT_ERROR;
-  }
-
-  // External watchdog
-  ExternalWatchdog_Status_T extWdgStatus = ExternalWatchdog_Init();
-  if (EXTWATCHDOG_STATUS_OK != extWdgStatus) {
-    printf("ExternalWatchdog process init error %u", extWdgStatus);
     return ECU_INIT_ERROR;
   }
 

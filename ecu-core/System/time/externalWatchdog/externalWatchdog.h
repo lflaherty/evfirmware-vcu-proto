@@ -5,8 +5,10 @@
  *      Author: Liam Flaherty
  */
 
-#ifndef DEVICE_EXTERNALWATCHDOG_EXTERNALWATCHDOG_H_
-#define DEVICE_EXTERNALWATCHDOG_EXTERNALWATCHDOG_H_
+#ifndef TIME_EXTERNALWATCHDOG_EXTERNALWATCHDOG_H_
+#define TIME_EXTERNALWATCHDOG_EXTERNALWATCHDOG_H_
+
+#include "stm32f7xx_hal.h"
 
 typedef enum
 {
@@ -16,7 +18,7 @@ typedef enum
 /**
  * @brief Initialize the external Watchdog Timer.
  */
-ExternalWatchdog_Status_T ExternalWatchdog_Init(void);
+ExternalWatchdog_Status_T ExternalWatchdog_Init(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
 
 /**
  * @brief Trigger the external watchdog timer to avoid reset.
@@ -24,4 +26,4 @@ ExternalWatchdog_Status_T ExternalWatchdog_Init(void);
  */
 ExternalWatchdog_Status_T ExternalWatchdog_Trigger(void);
 
-#endif /* DEVICE_EXTERNALWATCHDOG_EXTERNALWATCHDOG_H_ */
+#endif /* TIME_EXTERNALWATCHDOG_EXTERNALWATCHDOG_H_ */
