@@ -80,7 +80,7 @@ static ECU_Init_Status_T ECU_Init_System(void)
 
   // ADC
   ADC_Status_T statusAdc;
-  statusAdc = ADC_Init();
+  statusAdc = ADC_Init(16);  // TODO don't use magic number
   if (ADC_STATUS_OK != statusAdc) {
     printf("ADC initialization error %u\n", statusAdc);
     return ECU_INIT_ERROR;

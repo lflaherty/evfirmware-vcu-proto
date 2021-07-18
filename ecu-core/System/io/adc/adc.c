@@ -11,48 +11,73 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
-
-#define ADC_NUM_CHANNELS 5  /* Number of channels used */
-#define ADC_NUM_SAMPLES 1   /* Number of samples to take per channel */
-#define ADC_BUF_LEN (ADC_NUM_CHANNELS * ADC_NUM_SAMPLES)
+#include <stdbool.h>
+#include <math.h>
 
 /**
  * Used by DMA to store data
  */
-static volatile uint16_t adcDMABuf[ADC_BUF_LEN];
+static volatile uint16_t adcDMABuf[ADC_NUM_CHANNELS];
+
+/**
+ * Used to store intermediate ADC counting values.
+ * (The sum value before averaging)
+ */
+static volatile uint16_t adcDataCounting[ADC_NUM_CHANNELS];
 
 /**
  * Used to store final ADC results
  */
 static volatile uint16_t adcData[ADC_NUM_CHANNELS];
 
+/**
+ * Number of samples to average over
+ */
+static uint16_t numSamples;
+
+/**
+ * Use this in a logical shift >> as a cheap divide.
+ * Do this to avoid the 1/n divide required in the average calc.
+ */
+static uint16_t averagingShift;
+
+/**
+ * How many counts have occurred.
+ */
+static uint16_t currentSampleCount;
+
+static bool adcInitialized = false;
+
 
 // ------------------- Public methods -------------------
-ADC_Status_T ADC_Init(void)
+ADC_Status_T ADC_Init(const uint16_t numSampleAvg)
 {
   printf("ADC_Init begin\n");
   // Initialize buffers to 0 (can't use memset due to volatile)
-  size_t i;
-  for (i = 0; i < ADC_BUF_LEN; ++i) {
+  for (size_t i = 0; i < ADC_NUM_CHANNELS; ++i) {
     adcDMABuf[i] = 0;
-  }
-  for (i = 0; i < ADC_NUM_CHANNELS; ++i) {
     adcData[i] = 0;
+    adcDataCounting[i] = 0;
   }
+
+  numSamples = numSampleAvg;
+  averagingShift = log(numSamples) / log(2);
+  currentSampleCount = 0;
+
+  adcInitialized = true;
 
   printf("ADC_Init complete\n");
   return ADC_STATUS_OK;
 }
 
 //------------------------------------------------------------------------------
-// TODO rename to ADC_Start
 ADC_Status_T ADC_Config(ADC_HandleTypeDef* handle)
 {
   printf("ADC_Config begin\n");
   // TODO: this only works for ADC1 (with multiple channels), expand to ADCx
 
   // just need to start DMA
-  if (HAL_ADC_Start_DMA(handle, (uint32_t*)adcDMABuf, ADC_BUF_LEN) != HAL_OK) {
+  if (HAL_ADC_Start_DMA(handle, (uint32_t*)adcDMABuf, ADC_NUM_CHANNELS) != HAL_OK) {
     return ADC_STATUS_ERROR_DMA;
   }
 
@@ -81,11 +106,25 @@ void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
  */
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
-  // TODO: average results collected in this window?
+  if (adcInitialized) {
 
-  // copy results into final array
-  size_t i;
-  for (i = 0; i < ADC_NUM_CHANNELS; ++i) {
-    adcData[i] = adcDMABuf[i] & 0xFFF;  // 12 bit, it should be this anyway, but make sure
+    ++currentSampleCount;
+
+    if (currentSampleCount == numSamples) {
+      // copy results into averaging buffer
+      for (size_t i = 0; i < ADC_NUM_CHANNELS; ++i) {
+        adcDataCounting[i] += adcDMABuf[i] & 0xFFF;  // 12 bit, it should be this anyway, but make sure
+      }
+
+      // reset counter
+      currentSampleCount = 0;
+    } else {
+      // copy results into final buffer
+      for (size_t i = 0; i < ADC_NUM_CHANNELS; ++i) {
+        adcData[i] = adcDataCounting[i] >> averagingShift;
+        adcDataCounting[i] = 0;
+      }
+    }
+
   }
 }
