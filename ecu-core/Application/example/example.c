@@ -99,6 +99,16 @@ static void Example_TaskMain(void* pvParameters)
       char hellomsg[] = "Hey..;)\n";
       UART_SendMessage(&huart1, (uint8_t*)hellomsg, sizeof(hellomsg)/sizeof(char));
 
+      // Update RTC
+      RTC_GetDateTime(&hrtc, &rtcDateTime);
+      printf("%d/%d/%d %d:%d:%d\t",
+          rtcDateTime.date.Year,
+          rtcDateTime.date.Month,
+          rtcDateTime.date.Date,
+          rtcDateTime.time.Hours,
+          rtcDateTime.time.Minutes,
+          rtcDateTime.time.Seconds);
+
       // Set one of the outputs on the AD5592R
 //      AD5592R_Status_T statusAD5592R = AD5592R_AOUTSet(AD5592R_IO0, 512U);
 //      if (AD5592R_STATUS_OK != statusAD5592R) {
