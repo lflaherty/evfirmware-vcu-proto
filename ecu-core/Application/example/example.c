@@ -8,6 +8,8 @@
 #include "example.h"
 
 #include <stdio.h>
+#include <string.h>
+
 #include "FreeRTOS.h"
 #include "task.h"
 #include "stm32f7xx_hal.h"
@@ -17,6 +19,7 @@
 #include "io/adc/adc.h"
 //#include "io/ad5592r/ad5592r.h" // TODO remove
 #include "time/tasktimer/tasktimer.h"
+#include "time/rtc/rtc.h"
 
 // ------------------- Private data -------------------
 static unsigned int count = 0;
@@ -35,7 +38,10 @@ static TaskHandle_t exampleTaskHandle;
 // TODO pass this as a parameter
 extern CAN_HandleTypeDef hcan1;
 extern UART_HandleTypeDef huart1;
+extern RTC_HandleTypeDef hrtc;
 
+// RTC data
+static RTC_DateTime_T rtcDateTime;
 
 // ------------------- Private methods -------------------
 static void Example_TaskMain(void* pvParameters)
@@ -147,6 +153,19 @@ Example_Status_T Example_Init(void)
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET); // 0 (RESET) => pull up
   // ADC2_PUP
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);   // 1 (SET) => pull down
+
+  // set RTC
+  memset(&rtcDateTime, 0, sizeof(RTC_DateTime_T));
+  rtcDateTime.time.Hours = 0x0;
+  rtcDateTime.time.Minutes = 0x0;
+  rtcDateTime.time.Seconds = 0x0;
+  rtcDateTime.time.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+  rtcDateTime.time.StoreOperation = RTC_STOREOPERATION_RESET;
+  rtcDateTime.date.WeekDay = RTC_WEEKDAY_MONDAY;
+  rtcDateTime.date.Month = RTC_MONTH_JANUARY;
+  rtcDateTime.date.Date = 0x1;
+  rtcDateTime.date.Year = 0x0;
+  RTC_SetDateTime(&hrtc, &rtcDateTime);
 
   // create main task
   exampleTaskHandle = xTaskCreateStatic(

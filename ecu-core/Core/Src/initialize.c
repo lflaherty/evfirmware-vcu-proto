@@ -19,6 +19,7 @@
 //#include "io/ad5592r/ad5592r.h"
 #include "time/tasktimer/tasktimer.h"
 #include "time/externalWatchdog/externalWatchdog.h"
+#include "time/rtc/rtc.h"
 
 // externs for handles declared in main
 extern ADC_HandleTypeDef hadc1;
@@ -122,7 +123,14 @@ static ECU_Init_Status_T ECU_Init_System(void)
   // External watchdog
   ExternalWatchdog_Status_T extWdgStatus = ExternalWatchdog_Init(WATCHDOG_MR_GPIO_Port, WATCHDOG_MR_Pin);
   if (EXTWATCHDOG_STATUS_OK != extWdgStatus) {
-    printf("ExternalWatchdog process init error %u", extWdgStatus);
+    printf("ExternalWatchdog initialization error %u", extWdgStatus);
+    return ECU_INIT_ERROR;
+  }
+
+  // RTC
+  RTC_Status_T rtcStatus = RTC_Init();
+  if (RTC_STATUS_OK != rtcStatus) {
+    printf("RTC initialization error %u", rtcStatus);
     return ECU_INIT_ERROR;
   }
 
