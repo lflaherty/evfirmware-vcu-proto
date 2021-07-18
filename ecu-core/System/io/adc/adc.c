@@ -121,7 +121,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
     } else {
       // copy results into final buffer
       for (size_t i = 0; i < ADC_NUM_CHANNELS; ++i) {
-        adcData[i] = adcDataCounting[i] >> averagingShift;
+        adcData[i] = adcDataCounting[i] >> averagingShift; // use right shift as a cheap divide
         adcDataCounting[i] = 0;
       }
     }
