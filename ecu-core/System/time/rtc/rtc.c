@@ -23,11 +23,11 @@ RTC_Status_T RTC_Init(void)
 
 RTC_Status_T RTC_SetDateTime(RTC_HandleTypeDef *hrtc, RTC_DateTime_T* dateTime)
 {
-  if (HAL_OK != HAL_RTC_SetTime(hrtc, &dateTime->time, RTC_FORMAT_BCD)) {
+  if (HAL_OK != HAL_RTC_SetTime(hrtc, &dateTime->time, RTC_FORMAT_BIN)) {
     return RTC_STATUS_ERROR;
   }
 
-  if (HAL_OK != HAL_RTC_SetDate(hrtc, &dateTime->date, RTC_FORMAT_BCD)) {
+  if (HAL_OK != HAL_RTC_SetDate(hrtc, &dateTime->date, RTC_FORMAT_BIN)) {
     return RTC_STATUS_ERROR;
   }
 
@@ -36,11 +36,11 @@ RTC_Status_T RTC_SetDateTime(RTC_HandleTypeDef *hrtc, RTC_DateTime_T* dateTime)
 
 RTC_Status_T RTC_GetDateTime(RTC_HandleTypeDef *hrtc, RTC_DateTime_T* dateTime)
 {
-  if (HAL_OK != HAL_RTC_GetTime(hrtc, &dateTime->time, RTC_FORMAT_BCD)) {
+  if (HAL_OK != HAL_RTC_GetTime(hrtc, &dateTime->time, RTC_FORMAT_BIN)) {
     return RTC_STATUS_ERROR;
   }
 
-  if (HAL_OK != HAL_RTC_GetDate(hrtc, &dateTime->date, RTC_FORMAT_BCD)) {
+  if (HAL_OK != HAL_RTC_GetDate(hrtc, &dateTime->date, RTC_FORMAT_BIN)) {
     return RTC_STATUS_ERROR;
   }
 
