@@ -63,7 +63,7 @@ static ECU_Init_Status_T ECU_Init_System1(void)
   log.enableLogToLogFile = false;
   log.handleSerial = NULL;
 
-  logPrintS(&log, "ECU_Init_System1\n", LOGGING_DEFAULT_BUFF_LEN);
+  logPrintS(&log, "###### ECU_Init_System1 ######\n", LOGGING_DEFAULT_BUFF_LEN);
   char logBuffer[LOGGING_DEFAULT_BUFF_LEN];
 
   // UART
@@ -92,7 +92,7 @@ static ECU_Init_Status_T ECU_Init_System1(void)
 //------------------------------------------------------------------------------
 static ECU_Init_Status_T ECU_Init_System2(void)
 {
-  logPrintS(&log, "ECU_Init_System2\n", LOGGING_DEFAULT_BUFF_LEN);
+  logPrintS(&log, "###### ECU_Init_System2 ######\n", LOGGING_DEFAULT_BUFF_LEN);
   char logBuffer[LOGGING_DEFAULT_BUFF_LEN];
 
   // CAN bus
@@ -157,7 +157,7 @@ static ECU_Init_Status_T ECU_Init_System2(void)
 //------------------------------------------------------------------------------
 static ECU_Init_Status_T ECU_Init_System3(void)
 {
-  logPrintS(&log, "ECU_Init_System3\n", LOGGING_DEFAULT_BUFF_LEN);
+  logPrintS(&log, "###### ECU_Init_System3 ######\n", LOGGING_DEFAULT_BUFF_LEN);
   char logBuffer[LOGGING_DEFAULT_BUFF_LEN];
 
   // TODO remove AD5592R and SPI
@@ -198,7 +198,7 @@ static ECU_Init_Status_T ECU_Init_System3(void)
 //------------------------------------------------------------------------------
 static ECU_Init_Status_T ECU_Init_App1(void)
 {
-  logPrintS(&log, "ECU_Init_App1\n", LOGGING_DEFAULT_BUFF_LEN);
+  logPrintS(&log, "###### ECU_Init_App1 ######\n", LOGGING_DEFAULT_BUFF_LEN);
   char logBuffer[LOGGING_DEFAULT_BUFF_LEN];
 
   // Wheel speed process
@@ -215,7 +215,7 @@ static ECU_Init_Status_T ECU_Init_App1(void)
 //------------------------------------------------------------------------------
 static ECU_Init_Status_T ECU_Init_App2(void)
 {
-  logPrintS(&log, "ECU_Init_App2\n", LOGGING_DEFAULT_BUFF_LEN);
+  logPrintS(&log, "###### ECU_Init_App2 ######\n", LOGGING_DEFAULT_BUFF_LEN);
   char logBuffer[LOGGING_DEFAULT_BUFF_LEN];
 
   // Example process
