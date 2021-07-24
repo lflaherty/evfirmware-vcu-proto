@@ -20,7 +20,7 @@
 // ------------------- Private data -------------------
 static Logging_T* log;
 
-#define STACK_SIZE 128
+#define STACK_SIZE 2000
 static StaticTask_t taskBuffer;
 static StackType_t taskStack[STACK_SIZE];
 

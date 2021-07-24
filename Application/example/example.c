@@ -25,7 +25,7 @@ static Logging_T* log;
 
 static unsigned int count = 0;
 
-#define EX_STACK_SIZE 128
+#define EX_STACK_SIZE 2000
 static StaticTask_t taskBuffer;
 static StackType_t taskStack[EX_STACK_SIZE];
 

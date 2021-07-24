@@ -18,7 +18,7 @@
 // ------------------- Private data -------------------
 static Logging_T* log;
 
-#define WDG_TRIGGER_STACK_SIZE 128
+#define WDG_TRIGGER_STACK_SIZE 2000
 static StaticTask_t taskBuffer;
 static StackType_t taskStack[WDG_TRIGGER_STACK_SIZE];
 
