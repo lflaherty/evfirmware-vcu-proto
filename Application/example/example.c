@@ -47,7 +47,7 @@ static RTC_DateTime_T rtcDateTime;
 // ------------------- Private methods -------------------
 static void Example_TaskMain(void* pvParameters)
 {
-  logPrintS(log, "Example_Init complete\n", LOGGING_DEFAULT_BUFF_LEN);
+  logPrintS(log, "Example_TaskMain complete\n", LOGGING_DEFAULT_BUFF_LEN);
   char logBuffer[LOGGING_DEFAULT_BUFF_LEN];
 
   const TickType_t blockTime = 10 / portTICK_PERIOD_MS; // 10ms
