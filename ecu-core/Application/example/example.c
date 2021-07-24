@@ -128,7 +128,7 @@ static void Example_TaskMain(void* pvParameters)
   //    printf("Count %d\tADC1_CHANNEL3 %d - %dV (x100)\n", count, ADC_Get(ADC1_CHANNEL3), voltage);
   //    printf("AD5592R IO1 ADC input: 0x%x (%u)\n", adcValue, adcValue);
 
-
+      printf("\n");
       count++;
     }
 
