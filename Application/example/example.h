@@ -10,6 +10,8 @@
 #ifndef EXAMPLE_EXAMPLE_H_
 #define EXAMPLE_EXAMPLE_H_
 
+#include "lib/logging/logging.h"
+
 typedef enum
 {
   EXAMPLE_STATUS_OK     = 0x00U,
@@ -19,6 +21,6 @@ typedef enum
 /**
  * @brief Initialize the process
  */
-Example_Status_T Example_Init(void);
+Example_Status_T Example_Init(Logging_T* logger);
 
 #endif /* EXAMPLE_EXAMPLE_H_ */

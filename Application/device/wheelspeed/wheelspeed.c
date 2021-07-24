@@ -15,8 +15,11 @@
 #include "main.h" /* Fetch auto-generated GPIO names */
 
 #include "time/tasktimer/tasktimer.h"
+#include "lib/logging/logging.h"
 
 // ------------------- Private data -------------------
+static Logging_T* log;
+
 #define STACK_SIZE 128
 static StaticTask_t taskBuffer;
 static StackType_t taskStack[STACK_SIZE];
@@ -26,7 +29,7 @@ static TaskHandle_t wheelSpeedTaskHandle;
 // ------------------- Private methods -------------------
 static void WheelSpeed_TaskMain(void* pvParameters)
 {
-  printf("WheelSpeed_TaskMain begin\n");
+  logPrintS(log, "WheelSpeed_TaskMain begin\n", LOGGING_DEFAULT_BUFF_LEN);
 
   const TickType_t blockTime = 10 / portTICK_PERIOD_MS; // 10ms
   uint32_t notifiedValue;
@@ -46,9 +49,10 @@ static void WheelSpeed_TaskMain(void* pvParameters)
 
 
 // ------------------- Public methods -------------------
-WheelSpeed_Status_T WheelSpeed_Init(void)
+WheelSpeed_Status_T WheelSpeed_Init(Logging_T* logger)
 {
-  printf("WheelSpeed_Init begin\n");
+  log = logger;
+  logPrintS(log, "WheelSpeed_Init begin\n", LOGGING_DEFAULT_BUFF_LEN);
 
   // create main task
   wheelSpeedTaskHandle = xTaskCreateStatic(
@@ -67,6 +71,6 @@ WheelSpeed_Status_T WheelSpeed_Init(void)
     return WHEELSPEED_STATUS_ERROR;
   }
 
-  printf("WheelSpeed_Init complete\n");
+  logPrintS(log, "WheelSpeed_Init complete\n", LOGGING_DEFAULT_BUFF_LEN);
   return WHEELSPEED_STATUS_OK;
 }

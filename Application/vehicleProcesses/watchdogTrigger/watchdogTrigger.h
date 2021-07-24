@@ -10,6 +10,8 @@
 #ifndef VEHICLEPROCESSES_WATCHDOGTRIGGER_WATCHDOGTRIGGER_H_
 #define VEHICLEPROCESSES_WATCHDOGTRIGGER_WATCHDOGTRIGGER_H_
 
+#include "lib/logging/logging.h"
+
 typedef enum
 {
   WATCHDOGTRIGGER_STATUS_OK     = 0x00U,
@@ -19,6 +21,6 @@ typedef enum
 /**
  * @brief Initialize the process
  */
-WatchdogTrigger_Status_T WatchdogTrigger_Init(void);
+WatchdogTrigger_Status_T WatchdogTrigger_Init(Logging_T* logger);
 
 #endif /* VEHICLEPROCESSES_WATCHDOGTRIGGER_WATCHDOGTRIGGER_H_ */

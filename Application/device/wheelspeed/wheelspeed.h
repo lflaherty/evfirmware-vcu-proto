@@ -8,6 +8,8 @@
 #ifndef DEVICE_WHEELSPEED_WHEELSPEED_H_
 #define DEVICE_WHEELSPEED_WHEELSPEED_H_
 
+#include "lib/logging/logging.h"
+
 typedef enum
 {
   WHEELSPEED_STATUS_OK     = 0x00U,
@@ -16,8 +18,9 @@ typedef enum
 
 /**
  * @brief Initialize the process
+ * @param logger Pointer to logging settings
  */
-WheelSpeed_Status_T WheelSpeed_Init(void);
+WheelSpeed_Status_T WheelSpeed_Init(Logging_T* logger);
 
 
 #endif /* DEVICE_WHEELSPEED_WHEELSPEED_H_ */

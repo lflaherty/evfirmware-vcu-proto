@@ -68,7 +68,7 @@ static ECU_Init_Status_T ECU_Init_System1(void)
 
   // UART
   UART_Status_T statusUart;
-  statusUart = UART_Init();
+  statusUart = UART_Init(&log);
   if (UART_STATUS_OK != statusUart) {
     snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "UART Initialization error %u\n", UART_STATUS_OK);
     logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
@@ -97,7 +97,7 @@ static ECU_Init_Status_T ECU_Init_System2(void)
 
   // CAN bus
   CAN_Status_T statusCan;
-  statusCan = CAN_Init();
+  statusCan = CAN_Init(&log);
   if (CAN_STATUS_OK != statusCan) {
     snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "CAN Initialization error %u\n", statusCan);
     logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
@@ -112,7 +112,7 @@ static ECU_Init_Status_T ECU_Init_System2(void)
   }
 
 //  // SPI bus
-//  SPI_Status_T statusSpi = SPI_Init();
+//  SPI_Status_T statusSpi = SPI_Init(&log);
 //  if (SPI_STATUS_OK != statusSpi) {
 //    snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "SPI Initialization error %u\n", statusSpi);
 //    logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
@@ -121,7 +121,7 @@ static ECU_Init_Status_T ECU_Init_System2(void)
 
   // ADC
   ADC_Status_T statusAdc;
-  statusAdc = ADC_Init(16);  // TODO don't use magic number
+  statusAdc = ADC_Init(&log, 16);  // TODO don't use magic number
   if (ADC_STATUS_OK != statusAdc) {
     snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "ADC initialization error %u\n", statusAdc);
     logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
@@ -136,7 +136,7 @@ static ECU_Init_Status_T ECU_Init_System2(void)
   }
 
   // Timers
-  TaskTimer_Status_T statusTaskTimer = TaskTimer_Init(&htim2);
+  TaskTimer_Status_T statusTaskTimer = TaskTimer_Init(&log, &htim2);
   if (TASKTIMER_STATUS_OK != statusTaskTimer) {
     snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "Task Timer initialization error %u\n", statusTaskTimer);
     logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
@@ -144,7 +144,7 @@ static ECU_Init_Status_T ECU_Init_System2(void)
   }
 
   // RTC
-  RTC_Status_T rtcStatus = RTC_Init();
+  RTC_Status_T rtcStatus = RTC_Init(&log);
   if (RTC_STATUS_OK != rtcStatus) {
     snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "RTC initialization error %u", rtcStatus);
     logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
@@ -185,7 +185,7 @@ static ECU_Init_Status_T ECU_Init_System3(void)
 //  }
 
   // External watchdog
-  ExternalWatchdog_Status_T extWdgStatus = ExternalWatchdog_Init(WATCHDOG_MR_GPIO_Port, WATCHDOG_MR_Pin);
+  ExternalWatchdog_Status_T extWdgStatus = ExternalWatchdog_Init(&log, WATCHDOG_MR_GPIO_Port, WATCHDOG_MR_Pin);
   if (EXTWATCHDOG_STATUS_OK != extWdgStatus) {
     snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "ExternalWatchdog initialization error %u", extWdgStatus);
     logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
@@ -202,7 +202,7 @@ static ECU_Init_Status_T ECU_Init_App1(void)
   char logBuffer[LOGGING_DEFAULT_BUFF_LEN];
 
   // Wheel speed process
-  WheelSpeed_Status_T statusWheelSpeed = WheelSpeed_Init();
+  WheelSpeed_Status_T statusWheelSpeed = WheelSpeed_Init(&log);
   if (WHEELSPEED_STATUS_OK != statusWheelSpeed) {
     snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "WheelSpeed process init error %u", statusWheelSpeed);
     logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
@@ -220,7 +220,7 @@ static ECU_Init_Status_T ECU_Init_App2(void)
 
   // Example process
   Example_Status_T statusEx;
-  statusEx = Example_Init();
+  statusEx = Example_Init(&log);
   if (EXAMPLE_STATUS_OK != statusEx) {
     snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "Example process init error %u", statusEx);
     logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
@@ -228,7 +228,7 @@ static ECU_Init_Status_T ECU_Init_App2(void)
   }
 
   // Watchdog Trigger
-  WatchdogTrigger_Status_T watchdogTriggerStatus = WatchdogTrigger_Init();
+  WatchdogTrigger_Status_T watchdogTriggerStatus = WatchdogTrigger_Init(&log);
   if (WATCHDOGTRIGGER_STATUS_OK != watchdogTriggerStatus) {
     snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "WatchdogTrigger process init error %u", watchdogTriggerStatus);
     logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
