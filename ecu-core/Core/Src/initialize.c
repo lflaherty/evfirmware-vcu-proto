@@ -6,8 +6,10 @@
  */
 
 #include "initialize.h"
+#include "main.h"
 
 #include <stdio.h>
+#include "vehicleProcesses/watchdogTrigger/watchdogTrigger.h"
 #include "example/example.h"
 #include "device/wheelspeed/wheelspeed.h"
 #include "comm/can/can.h"
@@ -16,6 +18,8 @@
 #include "io/adc/adc.h"
 //#include "io/ad5592r/ad5592r.h"
 #include "time/tasktimer/tasktimer.h"
+#include "time/externalWatchdog/externalWatchdog.h"
+#include "time/rtc/rtc.h"
 
 // externs for handles declared in main
 extern ADC_HandleTypeDef hadc1;
@@ -76,7 +80,7 @@ static ECU_Init_Status_T ECU_Init_System(void)
 
   // ADC
   ADC_Status_T statusAdc;
-  statusAdc = ADC_Init();
+  statusAdc = ADC_Init(16);  // TODO don't use magic number
   if (ADC_STATUS_OK != statusAdc) {
     printf("ADC initialization error %u\n", statusAdc);
     return ECU_INIT_ERROR;
@@ -116,6 +120,20 @@ static ECU_Init_Status_T ECU_Init_System(void)
     return ECU_INIT_ERROR;
   }
 
+  // External watchdog
+  ExternalWatchdog_Status_T extWdgStatus = ExternalWatchdog_Init(WATCHDOG_MR_GPIO_Port, WATCHDOG_MR_Pin);
+  if (EXTWATCHDOG_STATUS_OK != extWdgStatus) {
+    printf("ExternalWatchdog initialization error %u", extWdgStatus);
+    return ECU_INIT_ERROR;
+  }
+
+  // RTC
+  RTC_Status_T rtcStatus = RTC_Init();
+  if (RTC_STATUS_OK != rtcStatus) {
+    printf("RTC initialization error %u", rtcStatus);
+    return ECU_INIT_ERROR;
+  }
+
 
   printf("ECU_Init_System complete\n\n");
   return ECU_INIT_OK;
@@ -125,6 +143,14 @@ static ECU_Init_Status_T ECU_Init_System(void)
 static ECU_Init_Status_T ECU_Init_Application(void)
 {
   printf("ECU_Init_Application begin\n");
+
+  // Wheel speed process
+  WheelSpeed_Status_T statusWheelSpeed = WheelSpeed_Init();
+  if (WHEELSPEED_STATUS_OK != statusWheelSpeed) {
+    printf("WheelSpeed process init error %u", statusWheelSpeed);
+    return ECU_INIT_ERROR;
+  }
+
   // Example process
   Example_Status_T statusEx;
   statusEx = Example_Init();
@@ -133,10 +159,10 @@ static ECU_Init_Status_T ECU_Init_Application(void)
     return ECU_INIT_ERROR;
   }
 
-  // Wheel speed process
-  WheelSpeed_Status_T statusWheelSpeed = WheelSpeed_Init();
-  if (WHEELSPEED_STATUS_OK != statusWheelSpeed) {
-    printf("WheelSpeed process init error %u", statusWheelSpeed);
+  // Watchdog Trigger
+  WatchdogTrigger_Status_T watchdogTriggerStatus = WatchdogTrigger_Init();
+  if (WATCHDOGTRIGGER_STATUS_OK != watchdogTriggerStatus) {
+    printf("WatchdogTrigger process init error %u", watchdogTriggerStatus);
     return ECU_INIT_ERROR;
   }
 

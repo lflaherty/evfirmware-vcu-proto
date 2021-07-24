@@ -8,6 +8,8 @@
 #include "example.h"
 
 #include <stdio.h>
+#include <string.h>
+
 #include "FreeRTOS.h"
 #include "task.h"
 #include "stm32f7xx_hal.h"
@@ -17,6 +19,7 @@
 #include "io/adc/adc.h"
 //#include "io/ad5592r/ad5592r.h" // TODO remove
 #include "time/tasktimer/tasktimer.h"
+#include "time/rtc/rtc.h"
 
 // ------------------- Private data -------------------
 static unsigned int count = 0;
@@ -35,7 +38,10 @@ static TaskHandle_t exampleTaskHandle;
 // TODO pass this as a parameter
 extern CAN_HandleTypeDef hcan1;
 extern UART_HandleTypeDef huart1;
+extern RTC_HandleTypeDef hrtc;
 
+// RTC data
+static RTC_DateTime_T rtcDateTime;
 
 // ------------------- Private methods -------------------
 static void Example_TaskMain(void* pvParameters)
@@ -93,6 +99,16 @@ static void Example_TaskMain(void* pvParameters)
       char hellomsg[] = "Hey..;)\n";
       UART_SendMessage(&huart1, (uint8_t*)hellomsg, sizeof(hellomsg)/sizeof(char));
 
+      // Update RTC
+      RTC_GetDateTime(&hrtc, &rtcDateTime);
+      printf("%d/%d/%d %d:%d:%d\t",
+          rtcDateTime.date.Year,
+          rtcDateTime.date.Month,
+          rtcDateTime.date.Date,
+          rtcDateTime.time.Hours,
+          rtcDateTime.time.Minutes,
+          rtcDateTime.time.Seconds);
+
       // Set one of the outputs on the AD5592R
 //      AD5592R_Status_T statusAD5592R = AD5592R_AOUTSet(AD5592R_IO0, 512U);
 //      if (AD5592R_STATUS_OK != statusAD5592R) {
@@ -112,7 +128,7 @@ static void Example_TaskMain(void* pvParameters)
   //    printf("Count %d\tADC1_CHANNEL3 %d - %dV (x100)\n", count, ADC_Get(ADC1_CHANNEL3), voltage);
   //    printf("AD5592R IO1 ADC input: 0x%x (%u)\n", adcValue, adcValue);
 
-
+      printf("\n");
       count++;
     }
 
@@ -147,6 +163,19 @@ Example_Status_T Example_Init(void)
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET); // 0 (RESET) => pull up
   // ADC2_PUP
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);   // 1 (SET) => pull down
+
+  // set RTC
+  memset(&rtcDateTime, 0, sizeof(RTC_DateTime_T));
+  rtcDateTime.time.Hours = 0x0;
+  rtcDateTime.time.Minutes = 0x0;
+  rtcDateTime.time.Seconds = 0x0;
+  rtcDateTime.time.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+  rtcDateTime.time.StoreOperation = RTC_STOREOPERATION_RESET;
+  rtcDateTime.date.WeekDay = RTC_WEEKDAY_MONDAY;
+  rtcDateTime.date.Month = RTC_MONTH_JANUARY;
+  rtcDateTime.date.Date = 0x1;
+  rtcDateTime.date.Year = 0x0;
+  RTC_SetDateTime(&hrtc, &rtcDateTime);
 
   // create main task
   exampleTaskHandle = xTaskCreateStatic(

@@ -11,6 +11,8 @@
 #include "stm32f7xx_hal.h"
 #include <stdint.h>
 
+#define ADC_NUM_CHANNELS 5  /* Number of channels used */
+
 typedef enum
 {
   ADC_STATUS_OK         = 0x00U,
@@ -28,8 +30,13 @@ typedef enum
 
 /**
  * @brief Initialize ADC driver interface
+ *
+ * @param numSampleAvg Number of samples to average over.
+ * For efficient averaging, this MUST be divisible by 2.
+ *
+ * @return Return status. ADC_STATUS_OK for success. See ADC_Status_T for more.
  */
-ADC_Status_T ADC_Init(void);
+ADC_Status_T ADC_Init(const uint16_t numSampleAvg);
 
 /**
  * @brief Configure ADC device
