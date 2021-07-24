@@ -57,14 +57,14 @@ static ECU_Init_Status_T ECU_Init_App2(void);     // Init application processes
 //------------------------------------------------------------------------------
 static ECU_Init_Status_T ECU_Init_System1(void)
 {
-  logPrintS(&log, "ECU_Init_System1\n", LOGGING_DEFAULT_BUFF_LEN);
-  char logBuffer[LOGGING_DEFAULT_BUFF_LEN];
-
   // Set up logging
   log.enableLogToDebug = true;
   log.enableLogToSerial = false;
   log.enableLogToLogFile = false;
   log.handleSerial = NULL;
+
+  logPrintS(&log, "ECU_Init_System1\n", LOGGING_DEFAULT_BUFF_LEN);
+  char logBuffer[LOGGING_DEFAULT_BUFF_LEN];
 
   // UART
   UART_Status_T statusUart;
