@@ -14,9 +14,7 @@
 #include "lib/logging/logging.h"
 #include "comm/can/can.h"
 #include "comm/uart/uart.h"
-//#include "comm/spi/spi.h" // TODO remove
 #include "io/adc/adc.h"
-//#include "io/ad5592r/ad5592r.h"
 #include "time/tasktimer/tasktimer.h"
 #include "time/externalWatchdog/externalWatchdog.h"
 #include "time/rtc/rtc.h"
@@ -33,16 +31,9 @@ extern DMA_HandleTypeDef hdma_adc1;
 
 extern CAN_HandleTypeDef hcan1;
 
-//extern SPI_HandleTypeDef hspi4;
-
 extern TIM_HandleTypeDef htim2;
 
 extern UART_HandleTypeDef huart1;
-
-// SPI Data for AD5592R
-// TODO remove
-//#define AD5592R_SPI_CS_GPIO_Port GPIOE
-//#define AD5592R_SPI_CS_Pin GPIO_PIN_4
 
 // ------------------- Private data -------------------
 static Logging_T log;
@@ -111,14 +102,6 @@ static ECU_Init_Status_T ECU_Init_System2(void)
     return ECU_INIT_ERROR;
   }
 
-//  // SPI bus
-//  SPI_Status_T statusSpi = SPI_Init(&log);
-//  if (SPI_STATUS_OK != statusSpi) {
-//    snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "SPI Initialization error %u\n", statusSpi);
-//    logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
-//    return ECU_INIT_ERROR;
-//  }
-
   // ADC
   ADC_Status_T statusAdc;
   statusAdc = ADC_Init(&log, 16);  // TODO don't use magic number
@@ -159,30 +142,6 @@ static ECU_Init_Status_T ECU_Init_System3(void)
 {
   logPrintS(&log, "###### ECU_Init_System3 ######\n", LOGGING_DEFAULT_BUFF_LEN);
   char logBuffer[LOGGING_DEFAULT_BUFF_LEN];
-
-  // TODO remove AD5592R and SPI
-//  // AD5592R
-//  AD5592R_Status_T statusAD5592R;
-//  statusAD5592R = AD5592R_Init(&hspi4, AD5592R_SPI_CS_GPIO_Port, AD5592R_SPI_CS_Pin);
-//  if (AD5592R_STATUS_OK != statusAD5592R) {
-//    snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "AD5592R initialization error %u\n", statusAD5592R);
-//    logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
-//    return ECU_INIT_ERROR;
-//  }
-//
-//  // TODO Setup channels
-//  statusAD5592R = AD5592R_ConfigChannel(AD5592R_IO0, AD5592R_MODE_AOUT, AD5592R_PULLDOWN_ENABLED);
-//  if (AD5592R_STATUS_OK != statusAD5592R) {
-//    snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "AD5592R config IO0 error %u\n", statusAD5592R);
-  //    logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
-//    return ECU_INIT_ERROR;
-//  }
-//  statusAD5592R = AD5592R_ConfigChannel(AD5592R_IO1, AD5592R_MODE_AIN, AD5592R_PULLDOWN_ENABLED);
-//  if (AD5592R_STATUS_OK != statusAD5592R) {
-//    snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "AD5592R config IO1 error %u\n", statusAD5592R);
-//    logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
-//    return ECU_INIT_ERROR;
-//  }
 
   // External watchdog
   ExternalWatchdog_Status_T extWdgStatus = ExternalWatchdog_Init(&log, WATCHDOG_MR_GPIO_Port, WATCHDOG_MR_Pin);

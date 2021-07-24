@@ -17,7 +17,6 @@
 #include "comm/can/can.h"
 #include "comm/uart/uart.h"
 #include "io/adc/adc.h"
-//#include "io/ad5592r/ad5592r.h" // TODO remove
 #include "time/tasktimer/tasktimer.h"
 #include "time/rtc/rtc.h"
 
@@ -114,24 +113,6 @@ static void Example_TaskMain(void* pvParameters)
           rtcDateTime.time.Seconds);
       logPrintS(log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
 
-      // Set one of the outputs on the AD5592R
-//      AD5592R_Status_T statusAD5592R = AD5592R_AOUTSet(AD5592R_IO0, 512U);
-//      if (AD5592R_STATUS_OK != statusAD5592R) {
-//        printf("AD5592R write error %u\n", statusAD5592R);
-//      }
-
-      // Get one of the inputs on the AD5592R
-//      uint16_t adcValue = 0xdead;
-//      statusAD5592R = AD5592R_AINGet(AD5592R_IO1, &adcValue);
-
-  //    uint16_t voltage = (330 * ADC_Get(ADC1_CHANNEL3)) / 4096;
-//      printf("Count %d\tADC1_CHANNEL3 0x%x\tAD5592 IO1 0x%x (%u)\n",
-//          count,
-//          ADC_Get(ADC1_CHANNEL3),
-//          adcValue,
-//          adcValue);
-  //    printf("Count %d\tADC1_CHANNEL3 %d - %dV (x100)\n", count, ADC_Get(ADC1_CHANNEL3), voltage);
-  //    printf("AD5592R IO1 ADC input: 0x%x (%u)\n", adcValue, adcValue);
 
       snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "\n");
       logPrintS(log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
