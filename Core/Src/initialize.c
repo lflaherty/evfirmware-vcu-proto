@@ -9,9 +9,9 @@
 #include "main.h"
 
 #include <stdio.h>
-#include "vehicleProcesses/watchdogTrigger/watchdogTrigger.h"
-#include "example/example.h"
-#include "device/wheelspeed/wheelspeed.h"
+#include <stdbool.h>
+
+#include "lib/logging/logging.h"
 #include "comm/can/can.h"
 #include "comm/uart/uart.h"
 //#include "comm/spi/spi.h" // TODO remove
@@ -20,6 +20,12 @@
 #include "time/tasktimer/tasktimer.h"
 #include "time/externalWatchdog/externalWatchdog.h"
 #include "time/rtc/rtc.h"
+
+#include "example/example.h"
+#include "device/wheelspeed/wheelspeed.h"
+
+#include "vehicleProcesses/watchdogTrigger/watchdogTrigger.h"
+
 
 // externs for handles declared in main
 extern ADC_HandleTypeDef hadc1;
@@ -38,154 +44,218 @@ extern UART_HandleTypeDef huart1;
 //#define AD5592R_SPI_CS_GPIO_Port GPIOE
 //#define AD5592R_SPI_CS_Pin GPIO_PIN_4
 
+// ------------------- Private data -------------------
+static Logging_T log;
+
+// ------------------- Private prototypes -------------------
+static ECU_Init_Status_T ECU_Init_System1(void);  // Init basics for logging
+static ECU_Init_Status_T ECU_Init_System2(void);  // Init remaining internal devices
+static ECU_Init_Status_T ECU_Init_System3(void);  // Init external devices
+static ECU_Init_Status_T ECU_Init_App1(void);     // Init application devices
+static ECU_Init_Status_T ECU_Init_App2(void);     // Init application processes
 
 //------------------------------------------------------------------------------
-static ECU_Init_Status_T ECU_Init_System(void)
+static ECU_Init_Status_T ECU_Init_System1(void)
 {
-  printf("ECU_Init_System begin\n");
+  logPrintS(&log, "ECU_Init_System1\n", LOGGING_DEFAULT_BUFF_LEN);
+  char logBuffer[LOGGING_DEFAULT_BUFF_LEN];
+
+  // Set up logging
+  log.enableLogToDebug = true;
+  log.enableLogToSerial = false;
+  log.enableLogToLogFile = false;
+  log.handleSerial = NULL;
+
+  // UART
+  UART_Status_T statusUart;
+  statusUart = UART_Init();
+  if (UART_STATUS_OK != statusUart) {
+    snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "UART Initialization error %u\n", UART_STATUS_OK);
+    logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
+    return ECU_INIT_ERROR;
+  }
+
+  statusUart = UART_Config(&huart1);
+  if (UART_STATUS_OK != statusUart) {
+    snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "UART config error %u\n", statusUart);
+    logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
+    return ECU_INIT_ERROR;
+  }
+
+  // enable serial logging
+  log.enableLogToSerial = true;
+  log.handleSerial = &huart1;
+
+  return ECU_INIT_OK;
+}
+
+//------------------------------------------------------------------------------
+static ECU_Init_Status_T ECU_Init_System2(void)
+{
+  logPrintS(&log, "ECU_Init_System2\n", LOGGING_DEFAULT_BUFF_LEN);
+  char logBuffer[LOGGING_DEFAULT_BUFF_LEN];
 
   // CAN bus
   CAN_Status_T statusCan;
   statusCan = CAN_Init();
   if (CAN_STATUS_OK != statusCan) {
-    printf("CAN Initialization error %u\n", statusCan);
+    snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "CAN Initialization error %u\n", statusCan);
+    logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
     return ECU_INIT_ERROR;
   }
 
   statusCan = CAN_Config(&hcan1);
   if (CAN_STATUS_OK != statusCan) {
-    printf("CAN config error %u\n", statusCan);
+    snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "CAN config error %u\n", statusCan);
+    logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
     return ECU_INIT_ERROR;
   }
 
 //  // SPI bus
 //  SPI_Status_T statusSpi = SPI_Init();
 //  if (SPI_STATUS_OK != statusSpi) {
-//    printf("SPI Initialization error %u\n", statusSpi);
+//    snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "SPI Initialization error %u\n", statusSpi);
+//    logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
 //    return ECU_INIT_ERROR;
 //  }
-
-  UART_Status_T statusUart;
-  statusUart = UART_Init();
-  if (UART_STATUS_OK != statusUart) {
-    printf("UART Initialization error %u\n", UART_STATUS_OK);
-    return ECU_INIT_ERROR;
-  }
-
-  statusUart = UART_Config(&huart1);
-  if (UART_STATUS_OK != statusUart) {
-    printf("UART config error %u\n", statusUart);
-    return ECU_INIT_ERROR;
-  }
 
   // ADC
   ADC_Status_T statusAdc;
   statusAdc = ADC_Init(16);  // TODO don't use magic number
   if (ADC_STATUS_OK != statusAdc) {
-    printf("ADC initialization error %u\n", statusAdc);
+    snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "ADC initialization error %u\n", statusAdc);
+    logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
     return ECU_INIT_ERROR;
   }
 
   statusAdc = ADC_Config(&hadc1);
   if (ADC_STATUS_OK != statusAdc) {
-    printf("ADC config error %u\n", statusAdc);
+    snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "ADC config error %u\n", statusAdc);
+    logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
     return ECU_INIT_ERROR;
   }
-
-  // TODO remove AD5592R and SPI
-//  // AD5592R
-//  AD5592R_Status_T statusAD5592R;
-//  statusAD5592R = AD5592R_Init(&hspi4, AD5592R_SPI_CS_GPIO_Port, AD5592R_SPI_CS_Pin);
-//  if (AD5592R_STATUS_OK != statusAD5592R) {
-//    printf("AD5592R initialization error %u\n", statusAD5592R);
-//    return ECU_INIT_ERROR;
-//  }
-//
-//  // TODO Setup channels
-//  statusAD5592R = AD5592R_ConfigChannel(AD5592R_IO0, AD5592R_MODE_AOUT, AD5592R_PULLDOWN_ENABLED);
-//  if (AD5592R_STATUS_OK != statusAD5592R) {
-//    printf("AD5592R config IO0 error %u\n", statusAD5592R);
-//    return ECU_INIT_ERROR;
-//  }
-//  statusAD5592R = AD5592R_ConfigChannel(AD5592R_IO1, AD5592R_MODE_AIN, AD5592R_PULLDOWN_ENABLED);
-//  if (AD5592R_STATUS_OK != statusAD5592R) {
-//    printf("AD5592R config IO1 error %u\n", statusAD5592R);
-//    return ECU_INIT_ERROR;
-//  }
 
   // Timers
   TaskTimer_Status_T statusTaskTimer = TaskTimer_Init(&htim2);
   if (TASKTIMER_STATUS_OK != statusTaskTimer) {
-    printf("Task Timer initialization error %u\n", statusTaskTimer);
-    return ECU_INIT_ERROR;
-  }
-
-  // External watchdog
-  ExternalWatchdog_Status_T extWdgStatus = ExternalWatchdog_Init(WATCHDOG_MR_GPIO_Port, WATCHDOG_MR_Pin);
-  if (EXTWATCHDOG_STATUS_OK != extWdgStatus) {
-    printf("ExternalWatchdog initialization error %u", extWdgStatus);
+    snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "Task Timer initialization error %u\n", statusTaskTimer);
+    logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
     return ECU_INIT_ERROR;
   }
 
   // RTC
   RTC_Status_T rtcStatus = RTC_Init();
   if (RTC_STATUS_OK != rtcStatus) {
-    printf("RTC initialization error %u", rtcStatus);
+    snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "RTC initialization error %u", rtcStatus);
+    logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
     return ECU_INIT_ERROR;
   }
 
-
-  printf("ECU_Init_System complete\n\n");
   return ECU_INIT_OK;
 }
 
 //------------------------------------------------------------------------------
-static ECU_Init_Status_T ECU_Init_Application(void)
+static ECU_Init_Status_T ECU_Init_System3(void)
 {
-  printf("ECU_Init_Application begin\n");
+  logPrintS(&log, "ECU_Init_System3\n", LOGGING_DEFAULT_BUFF_LEN);
+  char logBuffer[LOGGING_DEFAULT_BUFF_LEN];
+
+  // TODO remove AD5592R and SPI
+//  // AD5592R
+//  AD5592R_Status_T statusAD5592R;
+//  statusAD5592R = AD5592R_Init(&hspi4, AD5592R_SPI_CS_GPIO_Port, AD5592R_SPI_CS_Pin);
+//  if (AD5592R_STATUS_OK != statusAD5592R) {
+//    snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "AD5592R initialization error %u\n", statusAD5592R);
+//    logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
+//    return ECU_INIT_ERROR;
+//  }
+//
+//  // TODO Setup channels
+//  statusAD5592R = AD5592R_ConfigChannel(AD5592R_IO0, AD5592R_MODE_AOUT, AD5592R_PULLDOWN_ENABLED);
+//  if (AD5592R_STATUS_OK != statusAD5592R) {
+//    snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "AD5592R config IO0 error %u\n", statusAD5592R);
+  //    logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
+//    return ECU_INIT_ERROR;
+//  }
+//  statusAD5592R = AD5592R_ConfigChannel(AD5592R_IO1, AD5592R_MODE_AIN, AD5592R_PULLDOWN_ENABLED);
+//  if (AD5592R_STATUS_OK != statusAD5592R) {
+//    snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "AD5592R config IO1 error %u\n", statusAD5592R);
+//    logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
+//    return ECU_INIT_ERROR;
+//  }
+
+  // External watchdog
+  ExternalWatchdog_Status_T extWdgStatus = ExternalWatchdog_Init(WATCHDOG_MR_GPIO_Port, WATCHDOG_MR_Pin);
+  if (EXTWATCHDOG_STATUS_OK != extWdgStatus) {
+    snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "ExternalWatchdog initialization error %u", extWdgStatus);
+    logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
+    return ECU_INIT_ERROR;
+  }
+
+  return ECU_INIT_OK;
+}
+
+//------------------------------------------------------------------------------
+static ECU_Init_Status_T ECU_Init_App1(void)
+{
+  logPrintS(&log, "ECU_Init_App1\n", LOGGING_DEFAULT_BUFF_LEN);
+  char logBuffer[LOGGING_DEFAULT_BUFF_LEN];
 
   // Wheel speed process
   WheelSpeed_Status_T statusWheelSpeed = WheelSpeed_Init();
   if (WHEELSPEED_STATUS_OK != statusWheelSpeed) {
-    printf("WheelSpeed process init error %u", statusWheelSpeed);
+    snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "WheelSpeed process init error %u", statusWheelSpeed);
+    logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
     return ECU_INIT_ERROR;
   }
+
+  return ECU_INIT_OK;
+}
+
+//------------------------------------------------------------------------------
+static ECU_Init_Status_T ECU_Init_App2(void)
+{
+  logPrintS(&log, "ECU_Init_App2\n", LOGGING_DEFAULT_BUFF_LEN);
+  char logBuffer[LOGGING_DEFAULT_BUFF_LEN];
 
   // Example process
   Example_Status_T statusEx;
   statusEx = Example_Init();
   if (EXAMPLE_STATUS_OK != statusEx) {
-    printf("Example process init error %u", statusEx);
+    snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "Example process init error %u", statusEx);
+    logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
     return ECU_INIT_ERROR;
   }
 
   // Watchdog Trigger
   WatchdogTrigger_Status_T watchdogTriggerStatus = WatchdogTrigger_Init();
   if (WATCHDOGTRIGGER_STATUS_OK != watchdogTriggerStatus) {
-    printf("WatchdogTrigger process init error %u", watchdogTriggerStatus);
+    snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "WatchdogTrigger process init error %u", watchdogTriggerStatus);
+    logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
     return ECU_INIT_ERROR;
   }
 
-  printf("ECU_Init_Application complete\n\n");
   return ECU_INIT_OK;
 }
 
 //------------------------------------------------------------------------------
 ECU_Init_Status_T ECU_Init(void)
 {
-  ECU_Init_Status_T ret;
+  ECU_Init_Status_T ret = ECU_INIT_OK;
 
-  // Initialize System components
-  ret = ECU_Init_System();
+  // Initialize components
+  ret |= ECU_Init_System1();
+  ret |= ECU_Init_System2();
+  ret |= ECU_Init_System3();
+  ret |= ECU_Init_App1();
+  ret |= ECU_Init_App2();
+
   if (ret != ECU_INIT_OK) {
+    logPrintS(&log, "Failed to initialize\n", LOGGING_DEFAULT_BUFF_LEN);
     return ret;
   }
 
-  // Initialize application components
-  ret = ECU_Init_Application();
-  if (ret != ECU_INIT_OK) {
-    return ret;
-  }
+  logPrintS(&log, "ECU_Init complete\n", LOGGING_DEFAULT_BUFF_LEN);
 
   return ECU_INIT_OK;
 }
