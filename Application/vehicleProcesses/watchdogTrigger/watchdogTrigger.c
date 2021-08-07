@@ -13,9 +13,12 @@
 
 #include "time/tasktimer/tasktimer.h"
 #include "time/externalWatchdog/externalWatchdog.h"
+#include "lib/logging/logging.h"
 
 // ------------------- Private data -------------------
-#define WDG_TRIGGER_STACK_SIZE 128
+static Logging_T* log;
+
+#define WDG_TRIGGER_STACK_SIZE 2000
 static StaticTask_t taskBuffer;
 static StackType_t taskStack[WDG_TRIGGER_STACK_SIZE];
 
@@ -25,7 +28,7 @@ static TaskHandle_t wdgTaskHandle;
 // ------------------- Private methods -------------------
 static void WatchdogTrigger_TaskMain(void* pvParameters)
 {
-  printf("WatchdogTrigger_TaskMain begin\n");
+  logPrintS(log, "WatchdogTrigger_TaskMain begin\n", LOGGING_DEFAULT_BUFF_LEN);
 
   const TickType_t blockTime = 1 / portTICK_PERIOD_MS; // 1ms
   uint32_t notifiedValue;
@@ -43,9 +46,10 @@ static void WatchdogTrigger_TaskMain(void* pvParameters)
 }
 
 // ------------------- Public methods -------------------
-WatchdogTrigger_Status_T WatchdogTrigger_Init(void)
+WatchdogTrigger_Status_T WatchdogTrigger_Init(Logging_T* logger)
 {
-  printf("WatchdogTrigger_Init begin\n");
+  log = logger;
+  logPrintS(log, "WatchdogTrigger_Init begin\n", LOGGING_DEFAULT_BUFF_LEN);
 
   // create main task
   wdgTaskHandle = xTaskCreateStatic(
@@ -64,6 +68,6 @@ WatchdogTrigger_Status_T WatchdogTrigger_Init(void)
     return WATCHDOGTRIGGER_STATUS_ERROR;
   }
 
-  printf("WatchdogTrigger_Init complete\n");
+  logPrintS(log, "WatchdogTrigger_Init complete\n", LOGGING_DEFAULT_BUFF_LEN);
   return WATCHDOGTRIGGER_STATUS_OK;
 }

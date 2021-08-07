@@ -17,14 +17,15 @@
 #include "comm/can/can.h"
 #include "comm/uart/uart.h"
 #include "io/adc/adc.h"
-//#include "io/ad5592r/ad5592r.h" // TODO remove
 #include "time/tasktimer/tasktimer.h"
 #include "time/rtc/rtc.h"
 
 // ------------------- Private data -------------------
+static Logging_T* log;
+
 static unsigned int count = 0;
 
-#define EX_STACK_SIZE 128
+#define EX_STACK_SIZE 2000
 static StaticTask_t taskBuffer;
 static StackType_t taskStack[EX_STACK_SIZE];
 
@@ -46,7 +47,8 @@ static RTC_DateTime_T rtcDateTime;
 // ------------------- Private methods -------------------
 static void Example_TaskMain(void* pvParameters)
 {
-  printf("Example_TaskMain begin\n");
+  logPrintS(log, "Example_TaskMain complete\n", LOGGING_DEFAULT_BUFF_LEN);
+  char logBuffer[LOGGING_DEFAULT_BUFF_LEN];
 
   const TickType_t blockTime = 10 / portTICK_PERIOD_MS; // 10ms
   uint32_t notifiedValue;
@@ -101,34 +103,19 @@ static void Example_TaskMain(void* pvParameters)
 
       // Update RTC
       RTC_GetDateTime(&hrtc, &rtcDateTime);
-      printf("%d/%d/%d %d:%d:%d\t",
+      snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN,
+          "%d/%d/%d %d:%d:%d\t",
           rtcDateTime.date.Year,
           rtcDateTime.date.Month,
           rtcDateTime.date.Date,
           rtcDateTime.time.Hours,
           rtcDateTime.time.Minutes,
           rtcDateTime.time.Seconds);
+      logPrintS(log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
 
-      // Set one of the outputs on the AD5592R
-//      AD5592R_Status_T statusAD5592R = AD5592R_AOUTSet(AD5592R_IO0, 512U);
-//      if (AD5592R_STATUS_OK != statusAD5592R) {
-//        printf("AD5592R write error %u\n", statusAD5592R);
-//      }
 
-      // Get one of the inputs on the AD5592R
-//      uint16_t adcValue = 0xdead;
-//      statusAD5592R = AD5592R_AINGet(AD5592R_IO1, &adcValue);
-
-  //    uint16_t voltage = (330 * ADC_Get(ADC1_CHANNEL3)) / 4096;
-//      printf("Count %d\tADC1_CHANNEL3 0x%x\tAD5592 IO1 0x%x (%u)\n",
-//          count,
-//          ADC_Get(ADC1_CHANNEL3),
-//          adcValue,
-//          adcValue);
-  //    printf("Count %d\tADC1_CHANNEL3 %d - %dV (x100)\n", count, ADC_Get(ADC1_CHANNEL3), voltage);
-  //    printf("AD5592R IO1 ADC input: 0x%x (%u)\n", adcValue, adcValue);
-
-      printf("\n");
+      snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "\n");
+      logPrintS(log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
       count++;
     }
 
@@ -137,24 +124,34 @@ static void Example_TaskMain(void* pvParameters)
 
 static void Example_canCallback(const CAN_DataFrame_T* data)
 {
-  printf("CAN received from %lx: ", data->msgId);
+  char logBuffer[LOGGING_DEFAULT_BUFF_LEN];
+  snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "CAN received from %lx: ", data->msgId);
+  logPrintS(log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
+
   size_t i;
   for (i = 0; i < data->dlc; ++i)
   {
-    printf(" %x", data->data[i]);
+    snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, " %x", data->data[i]);
+    logPrintS(log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
   }
-  printf("\n");
+
+  snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "\n");
+  logPrintS(log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
 }
 
 static void Example_uartCallback(const USART_Data_T* data)
 {
-  printf("UART received byte: %x\n", data->data);
+  char logBuffer[LOGGING_DEFAULT_BUFF_LEN];
+  snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "UART received byte: %x\n", data->data);
+  logPrintS(log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
 }
 
 // ------------------- Public methods -------------------
-Example_Status_T Example_Init(void)
+Example_Status_T Example_Init(Logging_T* logger)
 {
-  printf("Example_Init begin\n");
+  log = logger;
+  logPrintS(log, "Example_Init begin\n", LOGGING_DEFAULT_BUFF_LEN);
+
   // Register to receive messages from CAN1
   CAN_RegisterCallback(&hcan1, 0x3A1, Example_canCallback);
   UART_RegisterCallback(&huart1, Example_uartCallback);
@@ -194,6 +191,6 @@ Example_Status_T Example_Init(void)
     return EXAMPLE_STATUS_ERROR;
   }
 
-  printf("Example_Init complete\n");
+  logPrintS(log, "Example_Init complete\n", LOGGING_DEFAULT_BUFF_LEN);
   return EXAMPLE_STATUS_OK;
 }

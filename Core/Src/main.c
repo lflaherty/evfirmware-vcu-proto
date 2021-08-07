@@ -30,6 +30,7 @@
 #include "initialize.h"
 
 #include "time/tasktimer/tasktimer.h" /* Used for timer callback ISR */
+#include "lib/logging/logging.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -85,15 +86,6 @@ static void MX_RTC_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-// TODO: move this somewhere appropriate
-int _write(int file, char *ptr, int len)
-{
-  /* Implement your write code here, this is used by puts and printf for example */
-  int i=0;
-  for(i=0 ; i<len ; i++)
-    ITM_SendChar((*ptr++));
-  return len;
-}
 
 /* USER CODE END 0 */
 
