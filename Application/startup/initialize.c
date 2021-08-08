@@ -33,7 +33,31 @@ static ECU_Init_Status_T ECU_Init_System1(void);  // Init basics for logging
 static ECU_Init_Status_T ECU_Init_System2(void);  // Init remaining internal devices
 static ECU_Init_Status_T ECU_Init_System3(void);  // Init external devices
 static ECU_Init_Status_T ECU_Init_App1(void);     // Init application devices
-static ECU_Init_Status_T ECU_Init_App2(void);     // Init application processes
+static ECU_Init_Status_T ECU_Init_App2(void);     // Init application vehicle interface
+static ECU_Init_Status_T ECU_Init_App3(void);     // Init application processes
+
+//------------------------------------------------------------------------------
+ECU_Init_Status_T ECU_Init(void)
+{
+  ECU_Init_Status_T ret = ECU_INIT_OK;
+
+  // Initialize components
+  ret |= ECU_Init_System1();
+  ret |= ECU_Init_System2();
+  ret |= ECU_Init_System3();
+  ret |= ECU_Init_App1();
+  ret |= ECU_Init_App2();
+  ret |= ECU_Init_App3();
+
+  if (ret != ECU_INIT_OK) {
+    logPrintS(&log, "Failed to initialize\n", LOGGING_DEFAULT_BUFF_LEN);
+    return ret;
+  }
+
+  logPrintS(&log, "ECU_Init complete\n", LOGGING_DEFAULT_BUFF_LEN);
+
+  return ECU_INIT_OK;
+}
 
 //------------------------------------------------------------------------------
 static ECU_Init_Status_T ECU_Init_System1(void)
@@ -165,6 +189,14 @@ static ECU_Init_Status_T ECU_Init_App1(void)
 static ECU_Init_Status_T ECU_Init_App2(void)
 {
   logPrintS(&log, "###### ECU_Init_App2 ######\n", LOGGING_DEFAULT_BUFF_LEN);
+
+  return ECU_INIT_OK;
+}
+
+//------------------------------------------------------------------------------
+static ECU_Init_Status_T ECU_Init_App3(void)
+{
+  logPrintS(&log, "###### ECU_Init_App2 ######\n", LOGGING_DEFAULT_BUFF_LEN);
   char logBuffer[LOGGING_DEFAULT_BUFF_LEN];
 
   // Example process
@@ -187,24 +219,3 @@ static ECU_Init_Status_T ECU_Init_App2(void)
   return ECU_INIT_OK;
 }
 
-//------------------------------------------------------------------------------
-ECU_Init_Status_T ECU_Init(void)
-{
-  ECU_Init_Status_T ret = ECU_INIT_OK;
-
-  // Initialize components
-  ret |= ECU_Init_System1();
-  ret |= ECU_Init_System2();
-  ret |= ECU_Init_System3();
-  ret |= ECU_Init_App1();
-  ret |= ECU_Init_App2();
-
-  if (ret != ECU_INIT_OK) {
-    logPrintS(&log, "Failed to initialize\n", LOGGING_DEFAULT_BUFF_LEN);
-    return ret;
-  }
-
-  logPrintS(&log, "ECU_Init complete\n", LOGGING_DEFAULT_BUFF_LEN);
-
-  return ECU_INIT_OK;
-}

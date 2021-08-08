@@ -27,7 +27,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-#include "initialize.h"
+#include "startup/initialize.h"
 
 #include "time/tasktimer/tasktimer.h" /* Used for timer callback ISR */
 #include "lib/logging/logging.h"
