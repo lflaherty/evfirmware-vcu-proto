@@ -21,19 +21,9 @@
 
 #include "device/wheelspeed/wheelspeed.h"
 
+#include "vehicleInterface/deviceMapping/deviceMapping.h"
 #include "vehicleProcesses/example/example.h"
 #include "vehicleProcesses/watchdogTrigger/watchdogTrigger.h"
-
-
-// externs for handles declared in main
-extern ADC_HandleTypeDef hadc1;
-extern DMA_HandleTypeDef hdma_adc1;
-
-extern CAN_HandleTypeDef hcan1;
-
-extern TIM_HandleTypeDef htim2;
-
-extern UART_HandleTypeDef huart1;
 
 // ------------------- Private data -------------------
 static Logging_T log;
@@ -66,7 +56,7 @@ static ECU_Init_Status_T ECU_Init_System1(void)
     return ECU_INIT_ERROR;
   }
 
-  statusUart = UART_Config(&huart1);
+  statusUart = UART_Config(Mapping_GetUART1());
   if (UART_STATUS_OK != statusUart) {
     snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "UART config error %u\n", statusUart);
     logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
@@ -75,7 +65,7 @@ static ECU_Init_Status_T ECU_Init_System1(void)
 
   // enable serial logging
   log.enableLogToSerial = true;
-  log.handleSerial = &huart1;
+  log.handleSerial = Mapping_GetUART1();
 
   return ECU_INIT_OK;
 }
@@ -95,7 +85,7 @@ static ECU_Init_Status_T ECU_Init_System2(void)
     return ECU_INIT_ERROR;
   }
 
-  statusCan = CAN_Config(&hcan1);
+  statusCan = CAN_Config(Mapping_GetCAN1());
   if (CAN_STATUS_OK != statusCan) {
     snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "CAN config error %u\n", statusCan);
     logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
@@ -111,7 +101,7 @@ static ECU_Init_Status_T ECU_Init_System2(void)
     return ECU_INIT_ERROR;
   }
 
-  statusAdc = ADC_Config(&hadc1);
+  statusAdc = ADC_Config(Mapping_GetADC());
   if (ADC_STATUS_OK != statusAdc) {
     snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "ADC config error %u\n", statusAdc);
     logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
@@ -119,7 +109,7 @@ static ECU_Init_Status_T ECU_Init_System2(void)
   }
 
   // Timers
-  TaskTimer_Status_T statusTaskTimer = TaskTimer_Init(&log, &htim2);
+  TaskTimer_Status_T statusTaskTimer = TaskTimer_Init(&log, Mapping_GetTaskTimer());
   if (TASKTIMER_STATUS_OK != statusTaskTimer) {
     snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "Task Timer initialization error %u\n", statusTaskTimer);
     logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
