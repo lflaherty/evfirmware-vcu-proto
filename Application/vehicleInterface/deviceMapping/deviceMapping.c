@@ -16,6 +16,8 @@ extern DMA_HandleTypeDef hdma_adc1;
 
 extern CAN_HandleTypeDef hcan1;
 
+extern RTC_HandleTypeDef hrtc;
+
 extern UART_HandleTypeDef huart1;
 
 TIM_HandleTypeDef* Mapping_GetTaskTimer(void)
@@ -39,3 +41,10 @@ UART_HandleTypeDef* Mapping_GetUART1(void)
 {
   return &huart1;
 }
+
+
+RTC_HandleTypeDef* Mapping_GetRTC(void)
+{
+  return &hrtc;
+}
+

@@ -20,7 +20,15 @@ typedef enum
 
 /**
  * @brief Initialize the process
+ * @param logger Pointer to system logger
+ * @param hcan Handle for CAN bus to use
+ * @param huart Handle for UART device to use
+ * @param hrtc Handle for RTC
  */
-Example_Status_T Example_Init(Logging_T* logger);
+Example_Status_T Example_Init(
+    Logging_T* logger,
+    CAN_HandleTypeDef* hcan,
+    UART_HandleTypeDef* huart,
+    RTC_HandleTypeDef* hrtc);
 
 #endif /* EXAMPLE_EXAMPLE_H_ */
