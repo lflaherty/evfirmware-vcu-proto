@@ -19,9 +19,9 @@
 #include "time/externalWatchdog/externalWatchdog.h"
 #include "time/rtc/rtc.h"
 
-#include "example/example.h"
 #include "device/wheelspeed/wheelspeed.h"
 
+#include "vehicleProcesses/example/example.h"
 #include "vehicleProcesses/watchdogTrigger/watchdogTrigger.h"
 
 
