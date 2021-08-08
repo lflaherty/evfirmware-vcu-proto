@@ -23,5 +23,6 @@ TIM_HandleTypeDef* Mapping_GetTaskTimer(void);
 ADC_HandleTypeDef* Mapping_GetADC(void);
 CAN_HandleTypeDef* Mapping_GetCAN1(void);
 UART_HandleTypeDef* Mapping_GetUART1(void);
+RTC_HandleTypeDef* Mapping_GetRTC(void);
 
 #endif /* VEHICLEINTERFACE_DEVICEMAPPING_DEVICEMAPPING_H_ */

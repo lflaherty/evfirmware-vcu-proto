@@ -12,7 +12,7 @@
 #include "task.h"
 #include "stm32f7xx_hal.h"
 
-#include "main.h" /* Fetch auto-generated GPIO names */
+#include "vehicleInterface/deviceMapping/deviceMapping.h" /* Fetch auto-generated GPIO names */
 
 #include "time/tasktimer/tasktimer.h"
 #include "lib/logging/logging.h"

@@ -36,10 +36,10 @@ static StackType_t taskStack[EX_STACK_SIZE];
 // Task data
 static TaskHandle_t exampleTaskHandle;
 
-// TODO pass this as a parameter
-extern CAN_HandleTypeDef hcan1;
-extern UART_HandleTypeDef huart1;
-extern RTC_HandleTypeDef hrtc;
+// Devices used by this process
+static CAN_HandleTypeDef* canHandle;
+static UART_HandleTypeDef* uartHandle;
+static RTC_HandleTypeDef* rtcHandle;
 
 // RTC data
 static RTC_DateTime_T rtcDateTime;
@@ -71,7 +71,7 @@ static void Example_TaskMain(void* pvParameters)
       TxData[5] = 0xAF;
 
       /* Start the Transmission process */
-      CAN_SendMessage(&hcan1, 0x5A1, TxData, 8);
+      CAN_SendMessage(canHandle, 0x5A1, TxData, 8);
 
       // Send all the ADCs out on the CAN bus
       uint16_t adc0 = ADC_Get(ADC1_CHANNEL0);
@@ -94,15 +94,15 @@ static void Example_TaskMain(void* pvParameters)
       canMsg2[0] = adc4 & 0xFF;
       canMsg2[1] = (adc4 >> 8) & 0xFF;
 
-      CAN_SendMessage(&hcan1, 0x100, canMsg1, 8);
-      CAN_SendMessage(&hcan1, 0x101, canMsg2, 8);
+      CAN_SendMessage(canHandle, 0x100, canMsg1, 8);
+      CAN_SendMessage(canHandle, 0x101, canMsg2, 8);
 
       /* Send something on UART */
       char hellomsg[] = "Hey..;)\n";
-      UART_SendMessage(&huart1, (uint8_t*)hellomsg, sizeof(hellomsg)/sizeof(char));
+      UART_SendMessage(uartHandle, (uint8_t*)hellomsg, sizeof(hellomsg)/sizeof(char));
 
       // Update RTC
-      RTC_GetDateTime(&hrtc, &rtcDateTime);
+      RTC_GetDateTime(rtcHandle, &rtcDateTime);
       snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN,
           "%d/%d/%d %d:%d:%d\t",
           rtcDateTime.date.Year,
@@ -147,14 +147,22 @@ static void Example_uartCallback(const USART_Data_T* data)
 }
 
 // ------------------- Public methods -------------------
-Example_Status_T Example_Init(Logging_T* logger)
+Example_Status_T Example_Init(
+    Logging_T* logger,
+    CAN_HandleTypeDef* hcan,
+    UART_HandleTypeDef* huart,
+    RTC_HandleTypeDef* hrtc)
 {
   log = logger;
   logPrintS(log, "Example_Init begin\n", LOGGING_DEFAULT_BUFF_LEN);
 
+  canHandle = hcan;
+  uartHandle = huart;
+  rtcHandle = hrtc;
+
   // Register to receive messages from CAN1
-  CAN_RegisterCallback(&hcan1, 0x3A1, Example_canCallback);
-  UART_RegisterCallback(&huart1, Example_uartCallback);
+  CAN_RegisterCallback(canHandle, 0x3A1, Example_canCallback);
+  UART_RegisterCallback(uartHandle, Example_uartCallback);
 
   // ADC1_PUP
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET); // 0 (RESET) => pull up
@@ -172,7 +180,7 @@ Example_Status_T Example_Init(Logging_T* logger)
   rtcDateTime.date.Month = RTC_MONTH_JANUARY;
   rtcDateTime.date.Date = 0x1;
   rtcDateTime.date.Year = 0x0;
-  RTC_SetDateTime(&hrtc, &rtcDateTime);
+  RTC_SetDateTime(rtcHandle, &rtcDateTime);
 
   // create main task
   exampleTaskHandle = xTaskCreateStatic(

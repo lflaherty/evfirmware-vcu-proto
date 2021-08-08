@@ -6,7 +6,6 @@
  */
 
 #include "initialize.h"
-#include "main.h"
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -201,7 +200,11 @@ static ECU_Init_Status_T ECU_Init_App3(void)
 
   // Example process
   Example_Status_T statusEx;
-  statusEx = Example_Init(&log);
+  statusEx = Example_Init(
+      &log,
+      Mapping_GetCAN1(),
+      Mapping_GetUART1(),
+      Mapping_GetRTC());
   if (EXAMPLE_STATUS_OK != statusEx) {
     snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "Example process init error %u", statusEx);
     logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);
