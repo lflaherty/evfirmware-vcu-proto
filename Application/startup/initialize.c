@@ -117,7 +117,7 @@ static ECU_Init_Status_T ECU_Init_System2(void)
 
   // ADC
   ADC_Status_T statusAdc;
-  statusAdc = ADC_Init(&log, 16);  // TODO don't use magic number
+  statusAdc = ADC_Init(&log, MAPPING_ADC_NUM_CHANNELS, 16);  // TODO don't use magic number
   if (ADC_STATUS_OK != statusAdc) {
     snprintf(logBuffer, LOGGING_DEFAULT_BUFF_LEN, "ADC initialization error %u\n", statusAdc);
     logPrintS(&log, logBuffer, LOGGING_DEFAULT_BUFF_LEN);

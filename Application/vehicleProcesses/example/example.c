@@ -20,6 +20,8 @@
 #include "time/tasktimer/tasktimer.h"
 #include "time/rtc/rtc.h"
 
+#include "vehicleInterface/deviceMapping/deviceMapping.h"
+
 // ------------------- Private data -------------------
 static Logging_T* log;
 
@@ -74,11 +76,11 @@ static void Example_TaskMain(void* pvParameters)
       CAN_SendMessage(canHandle, 0x5A1, TxData, 8);
 
       // Send all the ADCs out on the CAN bus
-      uint16_t adc0 = ADC_Get(ADC1_CHANNEL0);
-      uint16_t adc1 = ADC_Get(ADC1_CHANNEL1);
-      uint16_t adc2 = ADC_Get(ADC1_CHANNEL2);
-      uint16_t adc3 = ADC_Get(ADC1_CHANNEL3);
-      uint16_t adc4 = ADC_Get(ADC1_CHANNEL4);
+      uint16_t adc0 = ADC_Get(MAPPING_ADC1_CHANNEL0);
+      uint16_t adc1 = ADC_Get(MAPPING_ADC1_CHANNEL1);
+      uint16_t adc2 = ADC_Get(MAPPING_ADC1_CHANNEL2);
+      uint16_t adc3 = ADC_Get(MAPPING_ADC1_CHANNEL3);
+      uint16_t adc4 = ADC_Get(MAPPING_ADC1_CHANNEL4);
 
       uint8_t canMsg1[8] = {0};
       canMsg1[0] = adc0 & 0xFF;
